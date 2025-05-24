@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title>Add User</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css">
+</head>
+<body class="container mt-5">
+<h2 class="mb-4">Add New User</h2>
+<form th:action="@{/user/add}" th:object="${user}" method="post" class="mb-4">
+    <div class="mb-3">
+        <label class="form-label">Name:</label>
+        <input type="text" th:field="*{name}" class="form-control" required>
+    </div>
+    <div class="mb-3">
+        <label class="form-label">Email:</label>
+        <input type="email" th:field="*{email}" class="form-control" required>
+    </div>
+    <div class="mb-3">
+        <label class="form-label">Phone:</label>
+        <input type="text" th:field="*{phone}" class="form-control" required>
+    </div>
+    <button type="submit" class="btn btn-primary">Save</button>
+</form>
+
+<h3 class="mb-3">List of Users</h3>
+<table class="table table-striped">
+    <thead>
+    <tr>
+        <th>Name</th><th>Email</th><th>Phone</th><th>Actions</th>
+    </tr>
+    </thead>
+    <tbody>
+    <tr th:each="user : ${users}">
+        <td th:text="${user.name}">Name</td>
+        <td th:text="${user.email}">Email</td>
+        <td th:text="${user.phone}">Phone</td>
+        <td>
+            <a th:href="@{'/user/delete/' + ${user.id}}" class="btn btn-danger btn-sm">Delete</a>
+        </td>
+    </tr>
+    </tbody>
+</table>
+</body>
+</html>
