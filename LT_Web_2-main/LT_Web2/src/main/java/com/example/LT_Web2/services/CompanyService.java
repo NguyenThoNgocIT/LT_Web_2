@@ -9,8 +9,9 @@ import java.util.List;
 
 @Service
 public class CompanyService {
+
     @Autowired
-    private  CompanyRepository companyRepository ;
+    private CompanyRepository companyRepository;
 
     public List<CompanyModel> getAllCompanies() {
         return companyRepository.findAll();
@@ -22,6 +23,24 @@ public class CompanyService {
 
     public CompanyModel getCompanyById(Long id) {
         return companyRepository.findById(id)
-                .orElseThrow(() -> new IllegalArgumentException("Company not found: " + id));
+                .orElseThrow(() -> new IllegalArgumentException("Không tìm thấy công ty với ID: " + id));
     }
+
+    public void deleteCompanyById(Long id) {
+        CompanyModel company = getCompanyById(id);
+        if (!company.getUsers().isEmpty()) {
+            throw new IllegalStateException("Không thể xóa công ty vì vẫn còn người dùng liên kết.");
+        }
+        companyRepository.deleteById(id);
+    }
+//    public void deleteCompanyById(Long id) {
+//        CompanyModel company = getCompanyById(id);
+//        // Cập nhật người dùng để bỏ liên kết
+//        company.getUsers().forEach(user -> {
+//            user.setCompany(null);
+//            UserRepository.save(user);
+//        });
+//        companyRepository.deleteById(id);
+//    }
 }
+

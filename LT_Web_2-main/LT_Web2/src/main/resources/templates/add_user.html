@@ -1,16 +1,25 @@
+```html
 <!DOCTYPE html>
-<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<html lang="vi" xmlns:th="http://www.thymeleaf.org">
 <head>
     <meta charset="UTF-8">
-    <title>Add User</title>
+    <title>Thêm Người Dùng</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
 </head>
 <body>
 <div class="container mt-5">
-    <h2>Add User</h2>
+    <h2>Thêm Người Dùng</h2>
+    <!-- Hiển thị thông báo thành công hoặc lỗi -->
+    <div th:if="${successMessage}" class="alert alert-success" role="alert">
+        <span th:text="${successMessage}"></span>
+    </div>
+    <div th:if="${errorMessage}" class="alert alert-danger" role="alert">
+        <span th:text="${errorMessage}"></span>
+    </div>
+
     <form th:action="@{/user/add}" th:object="${user}" method="post">
         <div class="mb-3">
-            <label for="name" class="form-label">Name</label>
+            <label for="name" class="form-label">Tên</label>
             <input type="text" class="form-control" id="name" th:field="*{name}" required>
         </div>
         <div class="mb-3">
@@ -18,38 +27,38 @@
             <input type="email" class="form-control" id="email" th:field="*{email}" required>
         </div>
         <div class="mb-3">
-            <label for="phone" class="form-label">Phone</label>
+            <label for="phone" class="form-label">Số điện thoại</label>
             <input type="text" class="form-control" id="phone" th:field="*{phone}">
         </div>
 
         <!-- Company Select -->
         <div class="mb-3">
-            <label for="companyId" class="form-label">Company</label>
+            <label for="companyId" class="form-label">Công ty</label>
             <select class="form-select" id="companyId" name="companyId" required>
-                <option value="">-- Select Company --</option>
+                <option value="">-- Chọn công ty --</option>
                 <th:block th:each="company : ${companies}">
                     <option th:value="${company.id}" th:text="${company.companyName}"></option>
                 </th:block>
             </select>
             <div class="form-text">
-                <a href="/company/add">Create new company</a>
+                <a href="/company/add" class="text-primary">Tạo công ty mới</a>
             </div>
         </div>
 
-        <button type="submit" class="btn btn-primary">Add User</button>
+        <button type="submit" class="btn btn-primary">Thêm Người Dùng</button>
     </form>
 
     <!-- User List -->
-    <h3 class="mt-5">User List</h3>
-    <table class="table table-bordered">
-        <thead>
+    <h3 class="mt-5">Danh Sách Người Dùng</h3>
+    <table class="table table-bordered table-hover">
+        <thead class="table-dark">
         <tr>
             <th>ID</th>
-            <th>Name</th>
+            <th>Tên</th>
             <th>Email</th>
-            <th>Phone</th>
-            <th>Company</th>
-            <th>Actions</th>
+            <th>Số điện thoại</th>
+            <th>Công ty</th>
+            <th>Hành động</th>
         </tr>
         </thead>
         <tbody>
@@ -58,11 +67,33 @@
             <td th:text="${user.name}"></td>
             <td th:text="${user.email}"></td>
             <td th:text="${user.phone}"></td>
-            <td th:text="${user.company?.companyName ?: 'No Company'}"></td>
+            <td th:text="${user.company?.companyName ?: 'Không có công ty'}"></td>
             <td>
-                <a th:href="@{/user/edit/{id}(id=${user.id})}" class="btn btn-sm btn-warning">Edit</a>
+                <a th:href="@{/user/edit/{id}(id=${user.id})}" class="btn btn-sm btn-warning">Sửa</a>
                 <a th:href="@{/user/delete/{id}(id=${user.id})}" class="btn btn-sm btn-danger"
-                   onclick="return confirm('Are you sure you want to delete this user?');">Delete</a>
+                   onclick="return confirm('Bạn có chắc muốn xóa người dùng này?');">Xóa</a>
+            </td>
+        </tr>
+        </tbody>
+    </table>
+
+    <!-- Company List -->
+    <h3 class="mt-5">Danh Sách Công Ty</h3>
+    <table class="table table-bordered table-hover">
+        <thead class="table-dark">
+        <tr>
+            <th>ID</th>
+            <th>Tên Công Ty</th>
+            <th>Hành động</th>
+        </tr>
+        </thead>
+        <tbody>
+        <tr th:each="company : ${companies}">
+            <td th:text="${company.id}"></td>
+            <td th:text="${company.companyName}"></td>
+            <td>
+                <a th:href="@{/company/delete/{id}(id=${company.id})}" class="btn btn-sm btn-danger"
+                   onclick="return confirm('Bạn có chắc muốn xóa công ty này?');">Xóa</a>
             </td>
         </tr>
         </tbody>
