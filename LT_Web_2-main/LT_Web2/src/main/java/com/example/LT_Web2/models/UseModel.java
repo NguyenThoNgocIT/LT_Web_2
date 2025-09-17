@@ -95,6 +95,9 @@ public class UseModel implements UserDetails {
         this.company = company;
     }
 
+    @Version
+    private Integer version;
+
     // UserDetails methods
     @Override
     public Collection<? extends GrantedAuthority> getAuthorities() {

@@ -57,22 +57,23 @@ public class UserController {
     }
 
     // Handle form submission to update an existing user
-    @PostMapping("/user/update")
-    public String updateUser(@ModelAttribute("user") UseModel user,
-                             @RequestParam("companyId") Long companyId) {
-        CompanyModel company = companyService.getCompanyById(companyId);
-        user.setCompany(company);
-        userService.saveUser(user);
-        return "redirect:/user/add";
-    }
+    // @PostMapping("/user/update")
+    // public String updateUser(@ModelAttribute("user") UseModel user,
+    //                          @RequestParam("companyId") Long companyId) {
+    //     CompanyModel company = companyService.getCompanyById(companyId);
+    //     user.setCompany(company);
+    //     userService.saveUser(user);
+    //     return "redirect:/user/add";
+    // }
 
 
     // Delete a user by ID
-    @GetMapping("/user/delete/{id}")
-    public String deleteUser(@PathVariable("id") Long id) {
-        userService.deleteUserById(id);
-        return "redirect:/user/add";
-    }
+    // @GetMapping("/user/delete/{id}")
+    // public String deleteUser(@PathVariable("id") Long id) {
+    //     userService.deleteUserById(id);
+    //     return "redirect:/user/add";
+    // }
+    
     // Show form to add a new company
     @GetMapping("/company/add")
     public String showAddCompanyForm(Model model) {
