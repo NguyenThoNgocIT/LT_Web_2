@@ -12,6 +12,7 @@ import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
 
+// Báo Spring đây là file cấu hình, nó sẽ đọc khi khởi động app.
 @Configuration
 public class SecurityConfig {
 
@@ -39,31 +40,30 @@ public class SecurityConfig {
     public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
         http
                 .csrf(csrf -> csrf.disable()) // Tắt CSRF để Postman gửi JSON
-                .headers(headers -> headers.frameOptions(frame -> frame.disable())) // 👈 Cho phép H2 Console trong
-                                                                                    // iframe
+                .headers(headers -> headers.frameOptions(frame -> frame.disable())) // Cho phép H2 Console trong iframe
                 .authorizeHttpRequests(auth -> auth
-                        // Cho phép tạo user mới không cần login
-                        .requestMatchers(HttpMethod.POST, "/api/users").permitAll()
+                        // ==== USERS API ====
+                        .requestMatchers(HttpMethod.POST, "/api/users").permitAll()       // tạo user (signup)
+                        .requestMatchers(HttpMethod.GET, "/api/users/**").permitAll()      // xem user
+                        .requestMatchers(HttpMethod.PUT, "/api/users/**").permitAll()      // cập nhật user
+                        .requestMatchers(HttpMethod.DELETE, "/api/users/**").permitAll()   // xóa user
 
-                        // cho phép xem user
-                        .requestMatchers(HttpMethod.GET, "/api/users/**").permitAll()
+                        // ==== COMPANIES API ====
+                        .requestMatchers(HttpMethod.GET, "/api/companies/**").permitAll()        // xem công ty
+                        .requestMatchers(HttpMethod.POST, "/api/companies").authenticated()      // tạo công ty
+                        .requestMatchers(HttpMethod.PUT, "/api/companies/**").authenticated()    // sửa công ty
+                        .requestMatchers(HttpMethod.DELETE, "/api/companies/**").authenticated() // xóa công ty
 
-                        // Cho phép cập nhật thông tin user (UPDATE)
-                        .requestMatchers(HttpMethod.PUT, "/api/users/**").permitAll()
-
-                        // Cho phép xóa user (DELETE)
-                        .requestMatchers(HttpMethod.DELETE, "/api/users/**").permitAll()
-
-                        // Các API khác phải login
+                        // Các API khác trong /api/** phải login
                         .requestMatchers("/api/**").authenticated()
 
-                        // Public
+                        // Public cho login, register, h2-console
                         .requestMatchers("/login", "/register", "/process-register", "/h2-console/**").permitAll()
 
-                        // Web controller
+                        // Web Controller: chỉ user/admin mới vào
                         .requestMatchers("/user/**", "/company/**").hasAnyAuthority("ROLE_USER", "ROLE_ADMIN")
 
-                        // Những request khác cũng phải login
+                        // Những request còn lại cũng phải login
                         .anyRequest().authenticated())
 
                 // Cho phép login form cho web
@@ -75,7 +75,7 @@ public class SecurityConfig {
                 .logout(logout -> logout
                         .logoutSuccessUrl("/login?logout")
                         .permitAll())
-                // Bật Basic Auth cho API (Postman test)
+                // Bật Basic Auth cho API (test Postman)
                 .httpBasic();
 
         return http.build();

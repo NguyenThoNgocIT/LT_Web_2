@@ -11,21 +11,25 @@ import java.util.List;
 public class CompanyService {
 
     @Autowired
-    private CompanyRepository companyRepository;
+    private CompanyRepository companyRepository; // Repository thao tác DB cho Company
 
+    // Lấy danh sách tất cả công ty
     public List<CompanyModel> getAllCompanies() {
         return companyRepository.findAll();
     }
 
+    // Lưu công ty mới hoặc cập nhật công ty
     public CompanyModel saveCompany(CompanyModel company) {
         return companyRepository.save(company);
     }
 
+    // Lấy công ty theo ID
     public CompanyModel getCompanyById(Long id) {
         return companyRepository.findById(id)
                 .orElseThrow(() -> new IllegalArgumentException("Không tìm thấy công ty với ID: " + id));
     }
 
+    // Xóa công ty theo ID, kiểm tra nếu vẫn còn user liên kết thì báo lỗi
     public void deleteCompanyById(Long id) {
         CompanyModel company = getCompanyById(id);
         if (!company.getUsers().isEmpty()) {
@@ -33,27 +37,17 @@ public class CompanyService {
         }
         companyRepository.deleteById(id);
     }
-    // public void deleteCompanyById(Long id) {
-    // CompanyModel company = getCompanyById(id);
-    // // Cập nhật người dùng để bỏ liên kết
-    // company.getUsers().forEach(user -> {
-    // user.setCompany(null);
-    // UserRepository.save(user);
-    // });
-    // companyRepository.deleteById(id);
-    // }
 
-    // Thêm hàm updateCompany để Controller gọi được
+    // Cập nhật công ty theo ID
     public CompanyModel updateCompany(Long id, CompanyModel company) {
         CompanyModel existingCompany = getCompanyById(id);
         existingCompany.setCompanyName(company.getCompanyName());
-        // nếu sau này bạn thêm field Address, Email thì mới update thêm ở đây
+        // Nếu sau này có thêm các field khác như address, email thì cập nhật ở đây
         return companyRepository.save(existingCompany);
     }
 
-    // Thêm hàm deleteCompany để Controller gọi được
+    // Wrapper method cho deleteCompanyById
     public void deleteCompany(Long id) {
-        deleteCompanyById(id); // gọi lại hàm bạn đã có sẵn
+        deleteCompanyById(id); // gọi lại hàm xóa có sẵn
     }
-
 }
