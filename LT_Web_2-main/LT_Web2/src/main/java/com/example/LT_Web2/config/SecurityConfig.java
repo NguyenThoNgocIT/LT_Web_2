@@ -141,7 +141,7 @@ public class SecurityConfig {
     @Order(1)
     public SecurityFilterChain webSecurityFilterChain(HttpSecurity http) throws Exception {
         http
-                .securityMatcher("/", "/login", "/register", "/process-register", "/user/**", "/admin/**")
+                .securityMatcher("/", "/login","logout", "/register", "/process-register", "/user/**", "/admin/**")
                 .csrf(csrf -> csrf.disable())
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers("/", "/login", "/register", "/process-register").permitAll()
@@ -156,6 +156,7 @@ public class SecurityConfig {
                         .permitAll()
                 )
                 .logout(logout -> logout
+                        .logoutUrl("/logout")
                         .logoutSuccessUrl("/login?logout")
                         .permitAll()
                 );

@@ -14,6 +14,7 @@ import org.springframework.stereotype.Component;
 import org.springframework.web.filter.OncePerRequestFilter;
 
 import java.io.IOException;
+import java.util.List;
 
 @Component
 public class JwtAuthFilter extends OncePerRequestFilter {
@@ -24,6 +25,22 @@ public class JwtAuthFilter extends OncePerRequestFilter {
     public JwtAuthFilter(UserDetailsService userDetailsService, JwtService jwtService) {
         this.userDetailsService = userDetailsService;
         this.jwtService = jwtService;
+    }
+
+    // ✅ Thêm phương thức này để bỏ qua các URL không cần JWT
+    @Override
+    protected boolean shouldNotFilter(HttpServletRequest request) {
+        List<String> skipPaths = List.of(
+                "/login",
+                "/logout",                     // ← quan trọng!
+                "/register",
+                "/process-register",
+                "/api/auth/login",
+                "/api/auth/register"
+        );
+
+        String path = request.getServletPath();
+        return skipPaths.stream().anyMatch(path::equals) || path.startsWith("/api/auth/");
     }
 
     @Override
