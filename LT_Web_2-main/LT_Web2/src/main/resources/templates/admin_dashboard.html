@@ -1,0 +1,392 @@
+<!DOCTYPE html>
+<html lang="vi" xmlns:th="http://www.thymeleaf.org" xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Dashboard</title>
+    <!-- Bootstrap CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Font Awesome for Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css">
+    <!-- Custom CSS for Dashboard Layout -->
+    <style>
+        body {
+            background-color: #f8f9fa;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+        .sidebar {
+            position: fixed;
+            top: 0;
+            left: 0;
+            height: 100%;
+            width: 260px;
+            background: #11101d;
+            padding: 10px 14px;
+            transition: all 0.5s ease;
+            z-index: 100;
+        }
+        .sidebar .logo-details {
+            height: 60px;
+            display: flex;
+            align-items: center;
+            color: #fff;
+        }
+        .sidebar .logo-details i {
+            font-size: 30px;
+            margin-right: 10px;
+        }
+        .sidebar .logo-details .logo_name {
+            font-size: 22px;
+            font-weight: 600;
+        }
+        .sidebar .nav-links {
+            padding: 30px 0 0 0;
+            margin: 0;
+        }
+        .sidebar .nav-links li {
+            list-style: none;
+            margin-bottom: 10px;
+        }
+        .sidebar .nav-links li a {
+            display: flex;
+            align-items: center;
+            text-decoration: none;
+            color: #fff;
+            padding: 10px 15px;
+            border-radius: 12px;
+            transition: all 0.3s ease;
+            cursor: pointer;
+        }
+        .sidebar .nav-links li a:hover,
+        .sidebar .nav-links li a.active {
+            background: #0d6efd;
+        }
+        .sidebar .nav-links li i {
+            font-size: 20px;
+            margin-right: 15px;
+        }
+        .main-content {
+            position: relative;
+            margin-left: 260px;
+            padding: 20px;
+            transition: all 0.5s ease;
+        }
+        .main-header {
+            display: flex;
+            justify-content: flex-end;
+            align-items: center;
+            padding: 10px 20px;
+            background: #fff;
+            border-radius: 12px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+        }
+        .stat-card {
+            border: none;
+            border-radius: 12px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.08);
+            color: white;
+            transition: transform 0.2s;
+        }
+        .stat-card:hover {
+            transform: translateY(-5px);
+        }
+        .table-container {
+            background: #fff;
+            padding: 2rem;
+            border-radius: 12px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.08);
+        }
+    </style>
+</head>
+<body>
+
+<!-- Sidebar Navigation -->
+<div class="sidebar">
+    <div class="logo-details">
+        <i class="fas fa-cogs"></i>
+        <span class="logo_name">Admin Panel</span>
+    </div>
+    <ul class="nav-links">
+        <li><a href="/admin/dashboard" class="active"><i class="fas fa-tachometer-alt"></i><span>Dashboard</span></a></li>
+        <!-- Nâng cấp: Dùng data-bs-toggle để mở modal quản lý công ty -->
+        <li><a data-bs-toggle="modal" data-bs-target="#companyModal"><i class="fas fa-building"></i><span>Quản lý Companies</span></a></li>
+        <li><a href="#"><i class="fas fa-chart-pie"></i><span>Báo Cáo</span></a></li>
+        <li><a href="#"><i class="fas fa-cog"></i><span>Cài Đặt</span></a></li>
+    </ul>
+</div>
+
+<!-- Main Content Area -->
+<div class="main-content">
+    <!-- Header with User Info and Logout -->
+    <header class="main-header mb-4">
+        <div class="user-info d-flex align-items-center">
+            <i class="fas fa-user-circle fa-2x me-2 text-primary"></i>
+            <span class="fw-bold me-3" sec:authentication="principal.name">Admin</span>
+            <form th:action="@{/logout}" method="post" class="mb-0">
+                <button type="submit" class="btn btn-outline-danger btn-sm">
+                    <i class="fas fa-sign-out-alt"></i> Đăng Xuất
+                </button>
+            </form>
+        </div>
+    </header>
+
+    <main>
+        <!-- Statistics Cards -->
+        <div class="row mb-4">
+            <div class="col-md-4">
+                <div class="stat-card bg-primary p-3">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <h4>Tổng số Users</h4>
+                            <h2 class="fw-bold" th:text="${totalUsers}">150</h2>
+                        </div>
+                        <i class="fas fa-users fa-3x opacity-50"></i>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="stat-card bg-success p-3">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <h4>Tổng số Companies</h4>
+                            <h2 class="fw-bold" th:text="${totalCompanies}">25</h2>
+                        </div>
+                        <i class="fas fa-building fa-3x opacity-50"></i>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="stat-card bg-warning text-dark p-3">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <h4>Lượt truy cập</h4>
+                            <h2 class="fw-bold">1,234</h2>
+                        </div>
+                        <i class="fas fa-eye fa-3x opacity-50"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- User Management Table -->
+        <div class="table-container">
+            <div class="d-flex justify-content-between align-items-center mb-3">
+                <h3 class="mb-0">Danh Sách Người Dùng</h3>
+                <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#addUserModal">
+                    <i class="fas fa-plus-circle me-2"></i>Thêm User Mới
+                </button>
+            </div>
+            <table class="table table-hover align-middle">
+                <thead class="table-light">
+                <tr>
+                    <th>ID</th>
+                    <th>Tên</th>
+                    <th>Email</th>
+                    <th>Công ty</th>
+                    <th>Hành động</th>
+                </tr>
+                </thead>
+                <tbody>
+                <!-- Nâng cấp: Thêm data-* attributes để JS có thể lấy dữ liệu -->
+                <tr th:each="user : ${users}">
+                    <td th:text="${user.id}"></td>
+                    <td th:text="${user.name}"></td>
+                    <td th:text="${user.email}"></td>
+                    <td th:text="${user.company?.companyName ?: 'N/A'}"></td>
+                    <td>
+                        <button type="button" class="btn btn-sm btn-outline-warning edit-user-btn"
+                                data-bs-toggle="modal" data-bs-target="#editUserModal"
+                                th:data-user-id="${user.id}"
+                                th:data-user-name="${user.name}"
+                                th:data-user-email="${user.email}"
+                                th:data-user-phone="${user.phone}"
+                                th:data-user-company-id="${user.company?.id}">
+                            <i class="fas fa-edit"></i>
+                        </button>
+                        <a th:href="@{/admin/users/delete/{id}(id=${user.id})}" class="btn btn-sm btn-outline-danger"
+                           onclick="return confirm('Bạn có chắc muốn xóa người dùng này?');"><i class="fas fa-trash"></i></a>
+                    </td>
+                </tr>
+                </tbody>
+            </table>
+        </div>
+    </main>
+</div>
+
+<!-- Modals Section -->
+
+<!-- Add User Modal -->
+<div class="modal fade" id="addUserModal" tabindex="-1" aria-labelledby="addUserModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <form th:action="@{/admin/users/save}" th:object="${newUser}" method="post">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="addUserModalLabel">Thêm Người Dùng Mới</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label for="add-name" class="form-label">Tên</label>
+                        <input type="text" class="form-control" id="add-name" th:field="*{name}" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="add-email" class="form-label">Email</label>
+                        <input type="email" class="form-control" id="add-email" th:field="*{email}" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="add-password" class="form-label">Mật khẩu</label>
+                        <input type="password" class="form-control" id="add-password" th:field="*{password}" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="add-phone" class="form-label">Số điện thoại</label>
+                        <input type="text" class="form-control" id="add-phone" th:field="*{phone}">
+                    </div>
+                    <div class="mb-3">
+                        <label for="add-companyId" class="form-label">Công ty</label>
+                        <select class="form-select" id="add-companyId" name="companyId">
+                            <option value="">-- Chọn công ty --</option>
+                            <th:block th:each="company : ${companies}">
+                                <option th:value="${company.id}" th:text="${company.companyName}"></option>
+                            </th:block>
+                        </select>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Đóng</button>
+                    <button type="submit" class="btn btn-primary">Lưu</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Edit User Modal -->
+<div class="modal fade" id="editUserModal" tabindex="-1" aria-labelledby="editUserModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <form th:action="@{/admin/users/save}" method="post">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="editUserModalLabel">Chỉnh Sửa Người Dùng</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <input type="hidden" id="edit-id" name="id">
+                    <div class="mb-3">
+                        <label for="edit-name" class="form-label">Tên</label>
+                        <input type="text" class="form-control" id="edit-name" name="name" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="edit-email" class="form-label">Email</label>
+                        <input type="email" class="form-control" id="edit-email" name="email" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="edit-password" class="form-label">Password</label>
+                        <input type="password" class="form-control" id="edit-password" name="password">
+                    </div>
+                    <div class="mb-3">
+                        <label for="edit-phone" class="form-label">Số điện thoại</label>
+                        <input type="text" class="form-control" id="edit-phone" name="phone">
+                    </div>
+                    <div class="mb-3">
+                        <label for="edit-companyId" class="form-label">Công ty</label>
+                        <select class="form-select" id="edit-companyId" name="companyId">
+                            <option value="">-- Chọn công ty --</option>
+                            <th:block th:each="company : ${companies}">
+                                <option th:value="${company.id}" th:text="${company.companyName}"></option>
+                            </th:block>
+                        </select>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Hủy</button>
+                    <button type="submit" class="btn btn-primary">Cập Nhật</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Company Management Modal -->
+<div class="modal fade" id="companyModal" tabindex="-1" aria-labelledby="companyModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="companyModalLabel">Quản Lý Công Ty</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <div class="row">
+                    <div class="col-md-5">
+                        <h6>Thêm Công Ty Mới</h6>
+                        <form th:action="@{/admin/company/save}" th:object="${newCompany}" method="post">
+                            <div class="mb-3">
+                                <label for="companyName" class="form-label">Tên Công Ty</label>
+                                <input type="text" class="form-control" id="companyName" th:field="*{companyName}" required>
+                            </div>
+                            <button type="submit" class="btn btn-primary">Thêm</button>
+                        </form>
+                    </div>
+                    <div class="col-md-7">
+                        <h6>Danh Sách Công Ty</h6>
+                        <table class="table table-bordered table-hover">
+                            <thead>
+                            <tr><th>ID</th><th>Tên Công Ty</th><th>Hành động</th></tr>
+                            </thead>
+                            <tbody>
+                            <tr th:each="company : ${companies}">
+                                <td th:text="${company.id}"></td>
+                                <td th:text="${company.companyName}"></td>
+                                <td>
+                                    <a th:href="@{/admin/company/delete/{id}(id=${company.id})}" class="btn btn-sm btn-danger"
+                                       onclick="return confirm('Bạn có chắc muốn xóa công ty này?');"><i class="fas fa-trash"></i></a>
+                                </td>
+                            </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+
+<!-- Bootstrap JS Bundle -->
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+
+<!-- Custom JS for Edit Modal -->
+<script>
+    document.addEventListener('DOMContentLoaded', function () {
+        const editUserModal = document.getElementById('editUserModal');
+        editUserModal.addEventListener('show.bs.modal', function (event) {
+            // Button that triggered the modal
+            const button = event.relatedTarget;
+
+            // Extract info from data-* attributes
+            const userId = button.getAttribute('data-user-id');
+            const userName = button.getAttribute('data-user-name');
+            const userEmail = button.getAttribute('data-user-email');
+            const userPhone = button.getAttribute('data-user-phone');
+            const userCompanyId = button.getAttribute('data-user-company-id');
+
+            // Update the modal's content.
+            const modalTitle = editUserModal.querySelector('.modal-title');
+            const idInput = editUserModal.querySelector('#edit-id');
+            const nameInput = editUserModal.querySelector('#edit-name');
+            const emailInput = editUserModal.querySelector('#edit-email');
+            const phoneInput = editUserModal.querySelector('#edit-phone');
+            const companySelect = editUserModal.querySelector('#edit-companyId');
+
+            modalTitle.textContent = 'Chỉnh Sửa User: ' + userName;
+            idInput.value = userId;
+            nameInput.value = userName;
+            emailInput.value = userEmail;
+            phoneInput.value = userPhone;
+            companySelect.value = userCompanyId;
+        });
+    });
+</script>
+
+</body>
+</html>
+

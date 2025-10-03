@@ -1,5 +1,6 @@
 package com.example.LT_Web2.models;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
 
 import java.util.ArrayList;
@@ -16,6 +17,7 @@ public class CompanyModel {
     private String companyName;
 
     @OneToMany(mappedBy = "company", cascade = CascadeType.ALL, orphanRemoval = true)
+    @JsonIgnore
     private List<UseModel> users = new ArrayList<>();
 
     // Getters và Setters

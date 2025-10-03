@@ -1,0 +1,245 @@
+<!DOCTYPE html>
+<html lang="vi" xmlns:th="http://www.thymeleaf.org" xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Trang Cá Nhân Của Bạn</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        body { font-family: 'Poppins', sans-serif; background-color: #eef2f5; }
+        .navbar { box-shadow: 0 2px 10px rgba(0,0,0,0.05); }
+        .profile-card, .details-card { border-radius: 15px; border: none; box-shadow: 0 5px 20px rgba(0,0,0,0.08); overflow: hidden; }
+        .profile-card .card-body { display: flex; flex-direction: column; align-items: center; text-align: center; }
+        .profile-avatar { font-size: 80px; color: #0d6efd; margin-bottom: 1rem; }
+        .details-card .card-header { background-color: #fff; border-bottom: 1px solid #dee2e6; padding: 1.25rem; }
+        .form-label { font-weight: 500; }
+        .btn-primary { background: linear-gradient(45deg, #0d6efd, #0dcaf0); border: none; padding: 12px 30px; font-weight: 600; transition: transform 0.2s; }
+        .btn-primary:hover { transform: translateY(-2px); box-shadow: 0 4px 15px rgba(13, 110, 253, 0.4); }
+        .modal-content { border-radius: 15px; box-shadow: 0 5px 20px rgba(0,0,0,0.08); }
+        .modal-header { border-bottom: 1px solid #dee2e6; background-color: #fff; }
+        .modal-footer { border-top: 1px solid #dee2e6; }
+        .modal-title { font-weight: 600; }
+    </style>
+</head>
+<body>
+<!-- Navigation Bar -->
+<nav class="navbar navbar-expand-lg navbar-light bg-white sticky-top">
+    <div class="container">
+        <a class="navbar-brand fw-bold text-primary" href="#">
+            <i class="fas fa-user-check"></i> MyProfile
+        </a>
+        <div class="d-flex align-items-center">
+            <span class="navbar-text me-3">
+                Xin chào, <strong sec:authentication="principal.name">User</strong>
+            </span>
+            <button type="button" class="btn btn-primary me-2" data-bs-toggle="modal" data-bs-target="#addCompanyModal">
+                <i class="fas fa-plus-circle me-1"></i>Thêm Công Ty
+            </button>
+            <form th:action="@{/logout}" method="post" class="mb-0">
+                <button type="submit" class="btn btn-outline-danger btn-sm">
+                    <i class="fas fa-sign-out-alt me-1"></i>Đăng Xuất
+                </button>
+            </form>
+        </div>
+    </div>
+</nav>
+
+<!-- Main Content -->
+<div class="container py-5">
+    <div th:if="${error}" class="alert alert-danger" th:text="${error}"></div>
+    <div th:if="${successMessage}" class="alert alert-success" th:text="${successMessage}"></div>
+    <div th:if="${user == null}" class="alert alert-danger">
+        Không tìm thấy thông tin người dùng. Vui lòng đăng nhập lại.
+    </div>
+    <div th:if="${user != null}" class="row">
+        <!-- Left Column: Profile Summary Card -->
+        <div class="col-lg-4">
+            <div class="card profile-card">
+                <div class="card-body p-4">
+                    <i class="fas fa-user-circle profile-avatar"></i>
+                    <h4 class="card-title mb-1" th:text="${user.name ?: 'N/A'}">User Name</h4>
+                    <p class="text-muted mb-3" th:text="${user.email ?: 'N/A'}">user.email@example.com</p>
+                    <hr class="w-100">
+                    <div class="w-100 text-start">
+                        <p class="mb-2">
+                            <i class="fas fa-building me-2 text-primary"></i>
+                            <strong>Công ty:</strong>
+                        </p>
+                        <p class="text-muted ms-4" th:text="${user.company?.companyName ?: 'Chưa cập nhật'}">Company Name</p>
+                        <p class="mb-2">
+                            <i class="fas fa-phone-alt me-2 text-primary"></i>
+                            <strong>Số điện thoại:</strong>
+                        </p>
+                        <p class="text-muted ms-4" th:text="${user.phone ?: 'Chưa cập nhật'}">0123456789</p>
+                    </div>
+                    <button type="button" class="btn btn-primary mt-3" data-bs-toggle="modal" data-bs-target="#editUserModal"
+                            th:data-user-id="${user.id}"
+                            th:data-user-name="${user.name}"
+                            th:data-user-email="${user.email}"
+                            th:data-user-phone="${user.phone}"
+                            th:data-user-company-id="${user.company?.id}">
+                        <i class="fas fa-edit me-2"></i>Chỉnh Sửa Thông Tin
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Right Column: Details and Edit Form -->
+        <div class="col-lg-8">
+            <div class="card details-card">
+                <div class="card-header">
+                    <h5 class="mb-0">Thông Tin Chi Tiết</h5>
+                </div>
+                <div class="card-body p-4">
+                    <form th:action="@{/user/profile}" th:object="${user}" method="post">
+                        <input type="hidden" th:field="*{id}" />
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label for="name" class="form-label">Tên của bạn</label>
+                                <input type="text" class="form-control" id="name" th:field="*{name}" required>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label for="email" class="form-label">Địa chỉ Email</label>
+                                <input type="email" class="form-control" id="email" th:field="*{email}" readonly>
+                                <div class="form-text">Email không thể thay đổi.</div>
+                            </div>
+                        </div>
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label for="phone" class="form-label">Số điện thoại</label>
+                                <input type="text" class="form-control" id="phone" th:field="*{phone}">
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label for="companyId" class="form-label">Công ty</label>
+                                <select class="form-select" id="companyId" name="companyId">
+                                    <option value="">-- Chọn công ty --</option>
+                                    <th:block th:each="company : ${companies}">
+                                        <option th:value="${company.id}"
+                                                th:selected="${user.company != null && company.id == user.company.id}"
+                                                th:text="${company.companyName}">
+                                        </option>
+                                    </th:block>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="mt-3 text-end">
+                            <button type="submit" class="btn btn-primary">
+                                <i class="fas fa-save me-2"></i>Cập Nhật Thông Tin
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Edit User Modal -->
+<div class="modal fade" id="editUserModal" tabindex="-1" aria-labelledby="editUserModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <form th:action="@{/user/profile}" method="post">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="editUserModalLabel">Chỉnh Sửa Thông Tin</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <input type="hidden" id="edit-id" name="id">
+                    <div class="mb-3">
+                        <label for="edit-name" class="form-label">Tên</label>
+                        <input type="text" class="form-control" id="edit-name" name="name" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="edit-email" class="form-label">Email</label>
+                        <input type="email" class="form-control" id="edit-email" name="email" readonly>
+                        <div class="form-text">Email không thể thay đổi.</div>
+                    </div>
+                    <div class="mb-3">
+                        <label for="edit-phone" class="form-label">Số điện thoại</label>
+                        <input type="text" class="form-control" id="edit-phone" name="phone">
+                    </div>
+                    <div class="mb-3">
+                        <label for="edit-companyId" class="form-label">Công ty</label>
+                        <select class="form-select" id="edit-companyId" name="companyId">
+                            <option value="">-- Chọn công ty --</option>
+                            <th:block th:each="company : ${companies}">
+                                <option th:value="${company.id}" th:text="${company.companyName}"></option>
+                            </th:block>
+                        </select>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Hủy</button>
+                    <button type="submit" class="btn btn-primary">Cập Nhật</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Add Company Modal -->
+<div class="modal fade" id="addCompanyModal" tabindex="-1" aria-labelledby="addCompanyModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <form th:action="@{/user/company/save}" th:object="${newCompany}" method="post">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="addCompanyModalLabel">Thêm Công Ty Mới</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label for="companyName" class="form-label">Tên Công Ty</label>
+                        <input type="text" class="form-control" id="companyName" th:field="*{companyName}" required>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Đóng</button>
+                    <button type="submit" class="btn btn-primary">Thêm</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Bootstrap JS Bundle -->
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+
+<!-- Custom JS for Edit Modal -->
+<script>
+    document.addEventListener('DOMContentLoaded', function () {
+        const editUserModal = document.getElementById('editUserModal');
+        editUserModal.addEventListener('show.bs.modal', function (event) {
+            // Button that triggered the modal
+            const button = event.relatedTarget;
+
+            // Extract info from data-* attributes
+            const userId = button.getAttribute('data-user-id');
+            const userName = button.getAttribute('data-user-name');
+            const userEmail = button.getAttribute('data-user-email');
+            const userPhone = button.getAttribute('data-user-phone');
+            const userCompanyId = button.getAttribute('data-user-company-id');
+
+            // Update the modal's content
+            const modalTitle = editUserModal.querySelector('.modal-title');
+            const idInput = editUserModal.querySelector('#edit-id');
+            const nameInput = editUserModal.querySelector('#edit-name');
+            const emailInput = editUserModal.querySelector('#edit-email');
+            const phoneInput = editUserModal.querySelector('#edit-phone');
+            const companySelect = editUserModal.querySelector('#edit-companyId');
+
+            modalTitle.textContent = 'Chỉnh Sửa Thông Tin: ' + userName;
+            idInput.value = userId;
+            nameInput.value = userName;
+            emailInput.value = userEmail;
+            phoneInput.value = userPhone || '';
+            companySelect.value = userCompanyId || '';
+        });
+    });
+</script>
+
+</body>
+</html>
