@@ -5,7 +5,6 @@ import com.example.LT_Web2.models.UseModel;
 import com.example.LT_Web2.services.CompanyService;
 import com.example.LT_Web2.services.UserService;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.context.annotation.Bean;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
@@ -16,6 +15,7 @@ import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
 import java.time.LocalDateTime;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 @Controller
@@ -270,5 +270,32 @@ public class AdminController {
         response.put("message", "User updated successfully");
         return ResponseEntity.ok(response);
     }
+    // =============== API: Get all users ===============
+    @GetMapping("/api/admin/users")
+    @ResponseBody
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<List<UseModel>> getAllUsersApi() {
+        List<UseModel> users = userService.getAllUsers();
+        return ResponseEntity.ok(users);
+    }
 
+    // =============== API: Get all companies ===============
+    @GetMapping("/api/admin/companies")
+    @ResponseBody
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<List<CompanyModel>> getAllCompaniesApi() {
+        List<CompanyModel> companies = companyService.getAllCompanies();
+        return ResponseEntity.ok(companies);
+    }
+
+    // =============== API: Get dashboard stats ===============
+    @GetMapping("/api/admin/dashboard")
+    @ResponseBody
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<Map<String, Object>> getDashboardStatsApi() {
+        Map<String, Object> stats = new HashMap<>();
+        stats.put("totalUsers", userService.getAllUsers().size());
+        stats.put("totalCompanies", companyService.getAllCompanies().size());
+        return ResponseEntity.ok(stats);
+    }
 }

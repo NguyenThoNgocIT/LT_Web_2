@@ -1,10 +1,8 @@
 package com.example.LT_Web2.config;
 
-import com.example.LT_Web2.models.UseModel;
 import com.example.LT_Web2.services.JwtService;
 import jakarta.servlet.http.HttpServletResponse;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.autoconfigure.cache.CacheManagerCustomizers;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.core.annotation.Order;
@@ -21,7 +19,10 @@ import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
-
+import org.springframework.web.cors.CorsConfiguration;
+import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
+import org.springframework.web.cors.CorsConfigurationSource;
+import java.util.List; // ← rất quan trọng
 import com.example.LT_Web2.repository.UserRepository;
 
 //@Configuration
@@ -163,6 +164,17 @@ public class SecurityConfig {
 
         return http.build();
     }
+    @Bean
+    public CorsConfigurationSource corsConfiguration() {
+        CorsConfiguration config = new CorsConfiguration();
+        config.setAllowedOriginPatterns(List.of("http://localhost:3000")); // React dev server
+        config.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "OPTIONS"));
+        config.setAllowedHeaders(List.of("*"));
+        config.setAllowCredentials(true); // nếu dùng cookie
+        UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
+        source.registerCorsConfiguration("/api/**", config);
+        return source;
+    }
 
     // ✅ CHUỖI BẢO MẬT CHO API (JWT - STATELESS)
     @Bean
@@ -170,6 +182,7 @@ public class SecurityConfig {
     public SecurityFilterChain apiSecurityFilterChain(HttpSecurity http,
                                                       JwtAuthFilter jwtAuthFilter) throws Exception {
         http
+                .cors(cors -> cors.configurationSource(corsConfiguration()))
                 .securityMatcher("/api/**")
                 .csrf(csrf -> csrf.disable())
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
@@ -182,7 +195,7 @@ public class SecurityConfig {
                 .exceptionHandling( ex -> ex
                         .authenticationEntryPoint((request, response, authException) ->{
                             // phần xử lí chưa xác thực nó sẽ log ra 401
-                            response.setStatus(HttpServletResponse.SC_ACCEPTED);
+                            response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
                             response.setContentType("application/json; charset=utf-8");
                             response.setCharacterEncoding("utf-8");
                             response.getWriter().write("""
