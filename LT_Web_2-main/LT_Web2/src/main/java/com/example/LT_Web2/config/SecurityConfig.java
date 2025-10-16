@@ -6,6 +6,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.core.annotation.Order;
+import org.springframework.http.HttpMethod;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.AuthenticationProvider;
 import org.springframework.security.authentication.dao.DaoAuthenticationProvider;
@@ -22,7 +23,7 @@ import org.springframework.security.web.authentication.UsernamePasswordAuthentic
 import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 import org.springframework.web.cors.CorsConfigurationSource;
-import java.util.List; // ← rất quan trọng
+import java.util.List;
 import com.example.LT_Web2.repository.UserRepository;
 
 @Configuration
@@ -35,12 +36,10 @@ public class SecurityConfig {
 
     @Bean
     public AuthenticationManager authenticationManager(
-        AuthenticationConfiguration authConfig) throws Exception {
-    return authConfig.getAuthenticationManager();
-        }
+            AuthenticationConfiguration authConfig) throws Exception {
+        return authConfig.getAuthenticationManager();
+    }
 
-
-    // --- UserDetailsService ---
     @Bean
     public UserDetailsService userDetailsService() {
         return email -> userRepository.findByEmail(email)
@@ -60,15 +59,12 @@ public class SecurityConfig {
         return provider;
     }
 
-    // ⚠️ Không cần AuthenticationManager bean nếu dùng đúng cách (Spring Boot 3+)
-    // Nhưng nếu bạn cần, hãy inject nó đúng cách (xem bên dưới)
-
-    // ✅ CHUỖI BẢO MẬT CHO WEB (SESSION-BASED)
     @Bean
     @Order(1)
     public SecurityFilterChain webSecurityFilterChain(HttpSecurity http) throws Exception {
         http
                 .securityMatcher("/", "/login","logout", "/register", "/process-register", "/user/**", "/admin/**")
+                .cors(cors -> cors.configurationSource(corsConfiguration())) // ← ĐÃ THÊM
                 .csrf(csrf -> csrf.disable())
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers("/", "/login", "/register", "/process-register").permitAll()
@@ -90,19 +86,20 @@ public class SecurityConfig {
 
         return http.build();
     }
+
     @Bean
     public CorsConfigurationSource corsConfiguration() {
         CorsConfiguration config = new CorsConfiguration();
-        config.setAllowedOriginPatterns(List.of("http://localhost:3000")); // React dev server
+        config.setAllowedOriginPatterns(List.of("http://localhost:3000"));
         config.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "OPTIONS"));
         config.setAllowedHeaders(List.of("*"));
-        config.setAllowCredentials(true); // nếu dùng cookie
+        config.setAllowCredentials(true);
         UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
         source.registerCorsConfiguration("/api/**", config);
+        source.registerCorsConfiguration("/**", config); // ← THÊM DÒNG NÀY ĐỂ ÁP DỤNG CHO TẤT CẢ
         return source;
     }
 
-    // ✅ CHUỖI BẢO MẬT CHO API (JWT - STATELESS)
     @Bean
     @Order(2)
     public SecurityFilterChain apiSecurityFilterChain(HttpSecurity http,
@@ -113,14 +110,14 @@ public class SecurityConfig {
                 .csrf(csrf -> csrf.disable())
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(auth -> auth
+                        .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll() // ← ĐÃ THÊM
                         .requestMatchers("/api/auth/**").permitAll()
                         .requestMatchers("/api/user/**").hasAnyRole("USER", "ADMIN")
                         .requestMatchers("/api/admin/**").hasRole("ADMIN")
                         .anyRequest().authenticated()
                 )
-                .exceptionHandling( ex -> ex
-                        .authenticationEntryPoint((request, response, authException) ->{
-                            // phần xử lí chưa xác thực nó sẽ log ra 401
+                .exceptionHandling(ex -> ex
+                        .authenticationEntryPoint((request, response, authException) -> {
                             response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
                             response.setContentType("application/json; charset=utf-8");
                             response.setCharacterEncoding("utf-8");
@@ -153,8 +150,7 @@ public class SecurityConfig {
                                     java.time.Instant.now(),
                                     request.getRequestURI()
                             ));
-                                })
-
+                        })
                 )
                 .addFilterBefore(jwtAuthFilter, UsernamePasswordAuthenticationFilter.class);
 

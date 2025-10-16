@@ -14,9 +14,7 @@ import org.springframework.web.bind.annotation.*;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
 import java.time.LocalDateTime;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 @Controller
 // ⚠️ KHÔNG dùng @RequestMapping("/admin") ở mức class
@@ -67,6 +65,9 @@ public class AdminController {
                     .body(buildResponse("error", "Email already exists", null, "/api/admin/users/save"));
         }
 
+        // ✅ THÊM DÒNG NÀY ĐỂ MÃ HÓA MẬT KHẨU
+        user.setPassword(passwordEncoder.encode(user.getPassword()));
+
         if (companyId != null) {
             CompanyModel company = companyService.getCompanyById(companyId);
             if (company == null) {
@@ -74,6 +75,13 @@ public class AdminController {
                         .body(buildResponse("error", "Company not found", null, "/api/admin/users/save"));
             }
             user.setCompany(company);
+        }
+
+        // ✅ ĐẢM BẢO USER CÓ ROLES
+        if (user.getRoles() == null || user.getRoles().isEmpty()) {
+            Set<String> defaultRoles = new HashSet<>();
+            defaultRoles.add("USER"); // hoặc "ADMIN" nếu muốn tạo admin
+            user.setRoles(defaultRoles);
         }
 
         UseModel savedUser = userService.saveUser(user);
@@ -84,6 +92,13 @@ public class AdminController {
     @ResponseBody
     @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<Map<String, Object>> deleteUserApi(@PathVariable("id") Long id) {
+        // 👇 THÊM KIỂM TRA KHÔNG CHO XÓA TÀI KHOẢN ADMIN MẶC ĐỊNH
+        UseModel userToDelete = userService.getUserById(id);
+        if (userToDelete != null && "admin@example.com".equals(userToDelete.getEmail())) {
+            return ResponseEntity.badRequest()
+                    .body(buildResponse("error", "Cannot delete default admin account", null, "/api/admin/users/delete/" + id));
+        }
+
         userService.deleteUserById(id);
         return ResponseEntity.ok(buildResponse("success", "User deleted successfully", null, "/api/admin/users/delete/" + id));
     }
