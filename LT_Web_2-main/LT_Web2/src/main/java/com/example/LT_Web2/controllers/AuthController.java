@@ -47,58 +47,6 @@ public class AuthController {
 
     @Autowired
     private JwtService jwtService;
-    @GetMapping("/")
-    public String home() {
-        return "redirect:/login";
-    }
-
-    // Show registration form
-    @GetMapping("/register")
-    public String showRegistrationForm(Model model) {
-        model.addAttribute("user", new UseModel());
-        return "signup";
-    }
-
-    // Show login page
-    @GetMapping("/login")
-    public String login() {
-        return "login";
-    }
-
-    // Process user registration (web)
-    @PostMapping("/process-register")
-    public String processRegister(@ModelAttribute("user") UseModel user, RedirectAttributes redirectAttributes) {
-        // Kiểm tra email
-        if (user.getEmail() == null || user.getEmail().trim().isEmpty()) {
-            redirectAttributes.addFlashAttribute("error", "Email is required");
-            return "redirect:/register";
-        }
-        // Kiểm tra name
-        if (user.getName() == null || user.getName().trim().isEmpty()) {
-            redirectAttributes.addFlashAttribute("error", "Name is required");
-            return "redirect:/register";
-        }
-        // Kiểm tra password
-        if (user.getPassword() == null || user.getPassword().trim().isEmpty()) {
-            redirectAttributes.addFlashAttribute("error", "Password is required");
-            return "redirect:/register";
-        }
-        // Kiểm tra email đã tồn tại
-        if (userService.findByEmail(user.getEmail()) != null) {
-            redirectAttributes.addFlashAttribute("error", "Email already exists");
-            return "redirect:/register";
-        }
-
-        String encodedPassword = passwordEncoder.encode(user.getPassword());
-        user.setPassword(encodedPassword);
-        Set<String> roles = new HashSet<>();
-        roles.add("USER");
-        user.setRoles(roles);
-        userRepository.save(user);
-        redirectAttributes.addFlashAttribute("message", "Đăng ký thành công!");
-        return "redirect:/login";
-    }
-
     // API: Register user
     @PostMapping("/api/auth/register")
     @ResponseBody
