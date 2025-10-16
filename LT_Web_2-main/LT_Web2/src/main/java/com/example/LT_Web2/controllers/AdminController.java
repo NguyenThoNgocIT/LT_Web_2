@@ -5,7 +5,6 @@ import com.example.LT_Web2.models.UseModel;
 import com.example.LT_Web2.services.CompanyService;
 import com.example.LT_Web2.services.UserService;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.context.annotation.Bean;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
@@ -15,8 +14,7 @@ import org.springframework.web.bind.annotation.*;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
 import java.time.LocalDateTime;
-import java.util.HashMap;
-import java.util.Map;
+import java.util.*;
 
 @Controller
 // ⚠️ KHÔNG dùng @RequestMapping("/admin") ở mức class
@@ -29,115 +27,6 @@ public class AdminController {
     private BCryptPasswordEncoder passwordEncoder;
     @Autowired
     private CompanyService companyService;
-
-    // =============== WEB ROUTES (Session-based, HTML) ===============
-
-    @GetMapping("/admin/dashboard")
-    @PreAuthorize("hasRole('ADMIN')")
-    public String dashboard(Model model) {
-        model.addAttribute("users", userService.getAllUsers());
-        model.addAttribute("companies", companyService.getAllCompanies());
-        model.addAttribute("totalUsers", userService.getAllUsers().size());
-        model.addAttribute("totalCompanies", companyService.getAllCompanies().size());
-        model.addAttribute("newUser", new UseModel());
-        model.addAttribute("newCompany", new CompanyModel());
-        return "admin_dashboard";
-    }
-    @PostMapping("/admin/users/save")
-    @PreAuthorize("hasRole('ADMIN')")
-    public String saveUserWeb(
-            @ModelAttribute("newUser") UseModel user,
-            @RequestParam(value = "companyId", required = false) Long companyId,
-            RedirectAttributes redirectAttributes) {
-
-        if (user.getId() != null && user.getId() > 0) {
-            // === CẬP NHẬT ===
-            UseModel existingUser = userService.getUserById(user.getId());
-            if (existingUser == null) {
-                redirectAttributes.addFlashAttribute("error", "Không tìm thấy người dùng để cập nhật");
-                return "redirect:/admin/dashboard";
-            }
-
-            // Kiểm tra email trùng (trừ khi là email của chính user đó)
-            UseModel userWithSameEmail = userService.findByEmail(user.getEmail());
-            if (userWithSameEmail != null && !userWithSameEmail.getId().equals(existingUser.getId())) {
-                redirectAttributes.addFlashAttribute("error", "Email đã tồn tại");
-                return "redirect:/admin/dashboard";
-            }
-
-            // Cập nhật các field cơ bản
-            existingUser.setName(user.getName());
-            existingUser.setEmail(user.getEmail());
-            existingUser.setPhone(user.getPhone());
-
-            // ✅ XỬ LÝ MẬT KHẨU: chỉ cập nhật nếu có nhập
-            if (user.getPassword() != null && !user.getPassword().trim().isEmpty()) {
-                existingUser.setPassword(passwordEncoder.encode(user.getPassword()));
-            }
-            // → Nếu không nhập, giữ nguyên existingUser.getPassword() (mật khẩu cũ)
-
-            // Cập nhật công ty
-            if (companyId != null) {
-                CompanyModel company = companyService.getCompanyById(companyId);
-                existingUser.setCompany(company);
-            } else {
-                existingUser.setCompany(null);
-            }
-
-            userService.saveUser(existingUser);
-            redirectAttributes.addFlashAttribute("success", "Cập nhật người dùng thành công!");
-        } else {
-            // === TẠO MỚI ===
-            if (user.getEmail() == null || user.getEmail().trim().isEmpty()) {
-                redirectAttributes.addFlashAttribute("error", "Email is required");
-                return "redirect:/admin/dashboard";
-            }
-            if (user.getName() == null || user.getName().trim().isEmpty()) {
-                redirectAttributes.addFlashAttribute("error", "Name is required");
-                return "redirect:/admin/dashboard";
-            }
-            if (user.getPassword() == null || user.getPassword().trim().isEmpty()) {
-                redirectAttributes.addFlashAttribute("error", "Password is required");
-                return "redirect:/admin/dashboard";
-            }
-            if (userService.findByEmail(user.getEmail()) != null) {
-                redirectAttributes.addFlashAttribute("error", "Email already exists");
-                return "redirect:/admin/dashboard";
-            }
-
-            // Mã hóa mật khẩu khi tạo mới
-            user.setPassword(passwordEncoder.encode(user.getPassword()));
-
-            if (companyId != null) {
-                CompanyModel company = companyService.getCompanyById(companyId);
-                user.setCompany(company);
-            }
-            userService.saveUser(user);
-            redirectAttributes.addFlashAttribute("success", "Thêm người dùng thành công!");
-        }
-
-        return "redirect:/admin/dashboard";
-    }
-    @GetMapping("/admin/users/delete/{id}")
-    @PreAuthorize("hasRole('ADMIN')")
-    public String deleteUserWeb(@PathVariable("id") Long id) {
-        userService.deleteUserById(id);
-        return "redirect:/admin/dashboard";
-    }
-
-    @PostMapping("/admin/company/save")
-    @PreAuthorize("hasRole('ADMIN')")
-    public String saveCompanyWeb(@ModelAttribute("newCompany") CompanyModel company) {
-        companyService.saveCompany(company);
-        return "redirect:/admin/dashboard";
-    }
-
-    @GetMapping("/admin/company/delete/{id}")
-    @PreAuthorize("hasRole('ADMIN')")
-    public String deleteCompanyWeb(@PathVariable("id") Long id) {
-        companyService.deleteCompanyById(id);
-        return "redirect:/admin/dashboard";
-    }
 
     // =============== API ROUTES (JWT-based, JSON) ===============
     private Map<String, Object> buildResponse(String status, String message, Object data,String path ) {
@@ -176,6 +65,9 @@ public class AdminController {
                     .body(buildResponse("error", "Email already exists", null, "/api/admin/users/save"));
         }
 
+        // ✅ THÊM DÒNG NÀY ĐỂ MÃ HÓA MẬT KHẨU
+        user.setPassword(passwordEncoder.encode(user.getPassword()));
+
         if (companyId != null) {
             CompanyModel company = companyService.getCompanyById(companyId);
             if (company == null) {
@@ -183,6 +75,13 @@ public class AdminController {
                         .body(buildResponse("error", "Company not found", null, "/api/admin/users/save"));
             }
             user.setCompany(company);
+        }
+
+        // ✅ ĐẢM BẢO USER CÓ ROLES
+        if (user.getRoles() == null || user.getRoles().isEmpty()) {
+            Set<String> defaultRoles = new HashSet<>();
+            defaultRoles.add("USER"); // hoặc "ADMIN" nếu muốn tạo admin
+            user.setRoles(defaultRoles);
         }
 
         UseModel savedUser = userService.saveUser(user);
@@ -193,6 +92,13 @@ public class AdminController {
     @ResponseBody
     @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<Map<String, Object>> deleteUserApi(@PathVariable("id") Long id) {
+        // 👇 THÊM KIỂM TRA KHÔNG CHO XÓA TÀI KHOẢN ADMIN MẶC ĐỊNH
+        UseModel userToDelete = userService.getUserById(id);
+        if (userToDelete != null && "admin@example.com".equals(userToDelete.getEmail())) {
+            return ResponseEntity.badRequest()
+                    .body(buildResponse("error", "Cannot delete default admin account", null, "/api/admin/users/delete/" + id));
+        }
+
         userService.deleteUserById(id);
         return ResponseEntity.ok(buildResponse("success", "User deleted successfully", null, "/api/admin/users/delete/" + id));
     }
@@ -270,5 +176,32 @@ public class AdminController {
         response.put("message", "User updated successfully");
         return ResponseEntity.ok(response);
     }
+    // =============== API: Get all users ===============
+    @GetMapping("/api/admin/users")
+    @ResponseBody
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<List<UseModel>> getAllUsersApi() {
+        List<UseModel> users = userService.getAllUsers();
+        return ResponseEntity.ok(users);
+    }
 
+    // =============== API: Get all companies ===============
+    @GetMapping("/api/admin/companies")
+    @ResponseBody
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<List<CompanyModel>> getAllCompaniesApi() {
+        List<CompanyModel> companies = companyService.getAllCompanies();
+        return ResponseEntity.ok(companies);
+    }
+
+    // =============== API: Get dashboard stats ===============
+    @GetMapping("/api/admin/dashboard")
+    @ResponseBody
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<Map<String, Object>> getDashboardStatsApi() {
+        Map<String, Object> stats = new HashMap<>();
+        stats.put("totalUsers", userService.getAllUsers().size());
+        stats.put("totalCompanies", companyService.getAllCompanies().size());
+        return ResponseEntity.ok(stats);
+    }
 }
