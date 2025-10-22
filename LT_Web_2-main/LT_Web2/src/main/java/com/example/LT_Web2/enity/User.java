@@ -1,4 +1,4 @@
-package com.example.LT_Web2.models;
+package com.example.LT_Web2.enity;
 
 import jakarta.persistence.*;
 import org.springframework.security.core.GrantedAuthority;
@@ -11,8 +11,8 @@ import java.util.Set;
 import java.util.stream.Collectors;
 
 @Entity
-@Table(name = "UserModel")
-public class UseModel implements UserDetails {
+@Table(name = "UserEnity")
+public class User implements UserDetails {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -33,10 +33,6 @@ public class UseModel implements UserDetails {
     @CollectionTable(name = "user_roles", joinColumns = @JoinColumn(name = "user_id"))
     @Column(name = "role")
     private Set<String> roles = new HashSet<>();
-
-    @ManyToOne
-    @JoinColumn(name = "company_id", nullable = true)
-    private CompanyModel company;
 
     // Getters và Setters
     public Long getId() {
@@ -87,13 +83,6 @@ public class UseModel implements UserDetails {
         this.roles = roles;
     }
 
-    public CompanyModel getCompany() {
-        return company;
-    }
-
-    public void setCompany(CompanyModel company) {
-        this.company = company;
-    }
 
     // UserDetails methods
     @Override

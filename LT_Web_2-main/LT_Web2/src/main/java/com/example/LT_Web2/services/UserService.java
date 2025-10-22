@@ -1,6 +1,6 @@
 package com.example.LT_Web2.services;
 
-import com.example.LT_Web2.models.UseModel;
+import com.example.LT_Web2.enity.User;
 import com.example.LT_Web2.repository.UserRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -18,17 +18,17 @@ public class UserService {
     }
 
     // Thêm hoặc cập nhật user
-    public UseModel saveUser(UseModel user) {
+    public User saveUser(User user) {
         return userRepository.save(user);
     }
 
     // Lấy tất cả user
-    public List<UseModel> getAllUsers() {
+    public List<User> getAllUsers() {
         return userRepository.findAll();
     }
 
     // Tìm user theo ID
-    public UseModel getUserById(Long id) {
+    public User getUserById(Long id) {
         return userRepository.findById(id)
                 .orElseThrow(() -> new IllegalArgumentException("Không tìm thấy user với ID: " + id));
     }
@@ -40,7 +40,7 @@ public class UserService {
         }
         userRepository.deleteById(id);
     }
-    public UseModel findByEmail(String email) {
+    public User findByEmail(String email) {
         return userRepository.findByEmail(email).orElse(null);
     }
 }

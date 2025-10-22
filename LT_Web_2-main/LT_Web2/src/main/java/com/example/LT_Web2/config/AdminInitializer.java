@@ -1,6 +1,6 @@
 package com.example.LT_Web2.config;
 
-import com.example.LT_Web2.models.UseModel;
+import com.example.LT_Web2.enity.User;
 import com.example.LT_Web2.repository.UserRepository;
 
 import org.springframework.beans.factory.annotation.Autowired;
@@ -26,7 +26,7 @@ public class AdminInitializer {
     public CommandLineRunner initAdmin() {
         return args -> {
             if (userRepository.findByEmail("admin@example.com").isEmpty()) {
-                UseModel admin = new UseModel();
+                User admin = new User();
                 admin.setEmail("admin@example.com");
                 admin.setName("Admin User");
                 admin.setPassword(bCryptPasswordEncoder.encode("admin123"));
