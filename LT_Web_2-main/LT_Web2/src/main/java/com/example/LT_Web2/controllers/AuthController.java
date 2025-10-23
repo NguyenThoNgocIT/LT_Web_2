@@ -1,12 +1,11 @@
 
 package com.example.LT_Web2.controllers;
 
-import com.example.LT_Web2.enity.User;
+import com.example.LT_Web2.entity.User;
 import com.example.LT_Web2.repository.UserRepository;
 import com.example.LT_Web2.services.JwtService;
 import com.example.LT_Web2.services.UserService;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.authentication.AuthenticationManager;

@@ -1,6 +1,8 @@
 package com.example.LT_Web2.controllers;
 
-import com.example.LT_Web2.enity.User;
+import com.example.LT_Web2.entity.Product;
+import com.example.LT_Web2.entity.User;
+import com.example.LT_Web2.services.ProductService;
 import com.example.LT_Web2.services.UserService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
@@ -147,4 +149,37 @@ public class AdminController {
         stats.put("totalUsers", userService.getAllUsers().size());
         return ResponseEntity.ok(stats);
     }
+    // =============== API: products ===============
+    @RestController
+    @RequestMapping("/api/admin/products")
+    @PreAuthorize("hasAnyRole('ROOT', 'ADMIN')")
+    public class ProductController {
+
+        @Autowired
+        private ProductService productService;
+
+        @PostMapping
+        public ResponseEntity<Product> create(@RequestBody Product product) {
+            return ResponseEntity.ok(productService.save(product));
+        }
+
+        @PutMapping("/{id}")
+        public ResponseEntity<Product> update(@PathVariable Long id, @RequestBody Product product) {
+            product.setId(id);
+            return ResponseEntity.ok(productService.save(product));
+        }
+
+        @DeleteMapping("/{id}")
+        public ResponseEntity<Void> delete(@PathVariable Long id) {
+            productService.deleteById(id);
+            return ResponseEntity.noContent().build();
+        }
+
+        @GetMapping
+        public ResponseEntity<List<Product>> getAll() {
+            return ResponseEntity.ok(productService.findAll());
+        }
+    }
+    // =============== API: api manager table ===============
+
 }

@@ -1,6 +1,6 @@
 package com.example.LT_Web2.config;
 
-import com.example.LT_Web2.enity.User;
+import com.example.LT_Web2.entity.User;
 import com.example.LT_Web2.repository.UserRepository;
 
 import org.springframework.beans.factory.annotation.Autowired;

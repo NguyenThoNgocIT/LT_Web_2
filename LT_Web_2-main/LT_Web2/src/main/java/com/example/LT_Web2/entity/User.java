@@ -1,4 +1,4 @@
-package com.example.LT_Web2.enity;
+package com.example.LT_Web2.entity;
 
 import jakarta.persistence.*;
 import org.springframework.security.core.GrantedAuthority;
@@ -11,7 +11,7 @@ import java.util.Set;
 import java.util.stream.Collectors;
 
 @Entity
-@Table(name = "UserEnity")
+(name = "UserEnity")
 public class User implements UserDetails {
 
     @Id
