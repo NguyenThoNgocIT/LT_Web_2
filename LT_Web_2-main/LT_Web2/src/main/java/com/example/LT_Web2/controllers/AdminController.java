@@ -1,9 +1,14 @@
 package com.example.LT_Web2.controllers;
 
 import com.example.LT_Web2.entity.Product;
+import com.example.LT_Web2.entity.Table;
+import com.example.LT_Web2.entity.TableStatus;
 import com.example.LT_Web2.entity.User;
 import com.example.LT_Web2.services.ProductService;
+import com.example.LT_Web2.services.TableService;
 import com.example.LT_Web2.services.UserService;
+import jakarta.validation.Valid;
+import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -25,7 +30,7 @@ public class AdminController {
     private BCryptPasswordEncoder passwordEncoder;
 
     // =============== API ROUTES (JWT-based, JSON) ===============
-    private Map<String, Object> buildResponse(String status, String message, Object data,String path ) {
+    private Map<String, Object> buildResponse(String status, String message, Object data, String path) {
         Map<String, Object> response = new HashMap<>();
         response.put("status", status);
         response.put("message", message);
@@ -131,6 +136,7 @@ public class AdminController {
         response.put("message", "User updated successfully");
         return ResponseEntity.ok(response);
     }
+
     // =============== API: Get all users ===============
     @GetMapping("/api/admin/users")
     @ResponseBody
@@ -149,6 +155,7 @@ public class AdminController {
         stats.put("totalUsers", userService.getAllUsers().size());
         return ResponseEntity.ok(stats);
     }
+
     // =============== API: products ===============
     @RestController
     @RequestMapping("/api/admin/products")
@@ -180,6 +187,87 @@ public class AdminController {
             return ResponseEntity.ok(productService.findAll());
         }
     }
-    // =============== API: api manager table ===============
 
+    // =============== API: api manager table ===============
+    @RestController
+    @RequestMapping("/api/admin/tables")
+    @CrossOrigin(origins = "*") // Có thể giới hạn theo domain production
+    @RequiredArgsConstructor
+    public class TableController {
+
+        private final TableService tableService;
+
+        /**
+         * Lấy danh sách tất cả bàn
+         */
+        @GetMapping
+        @PreAuthorize("hasAnyRole('ROOT', 'ADMIN')")
+        public ResponseEntity<List<Table>> getAllTables() {
+            return ResponseEntity.ok(tableService.findAll());
+        }
+
+        /**
+         * Lấy bàn theo trạng thái (AVAILABLE, RESERVED, OCCUPIED, COMPLETED)
+         */
+        @GetMapping("/status/{status}")
+        @PreAuthorize("hasAnyRole('ROOT', 'ADMIN')")
+        public ResponseEntity<List<Table>> getTablesByStatus(@PathVariable String status) {
+            TableStatus tableStatus = TableStatus.valueOf(status.toUpperCase());
+            return ResponseEntity.ok(tableService.findByStatus(tableStatus));
+        }
+
+        /**
+         * Tạo bàn mới
+         */
+        @PostMapping
+        @PreAuthorize("hasAnyRole('ROOT', 'ADMIN')")
+        public ResponseEntity<Table> createTable(@Valid @RequestBody Table table) {
+            return ResponseEntity.ok(tableService.save(table));
+        }
+
+        /**
+         * Cập nhật thông tin bàn (tên, vị trí) — KHÔNG cập nhật trạng thái ở đây
+         */
+        @PutMapping("/{id}")
+        @PreAuthorize("hasAnyRole('ROOT', 'ADMIN')")
+        public ResponseEntity<Table> updateTable(
+                @PathVariable Long id,
+                @Valid @RequestBody Table tableUpdate) {
+            Table existingTable = tableService.findById(id);
+            existingTable.setName(tableUpdate.getName());
+            existingTable.setLocation(tableUpdate.getLocation());
+            // Không cho phép đổi trạng thái qua endpoint này
+            return ResponseEntity.ok(tableService.save(existingTable));
+        }
+
+        /**
+         * CẬP NHẬT TRẠNG THÁI BÀN — dùng cho nghiệp vụ (check-in, thanh toán, dọn dẹp...)
+         */
+        @PutMapping("/{id}/status")
+        @PreAuthorize("hasAnyRole('ROOT', 'ADMIN')")
+        public ResponseEntity<Table> updateTableStatus(
+                @PathVariable Long id,
+                @RequestBody Map<String, String> request) {
+
+            String statusStr = request.get("status");
+            if (statusStr == null || statusStr.trim().isEmpty()) {
+                throw new IllegalArgumentException("Trường 'status' không được để trống");
+            }
+
+            TableStatus newStatus = TableStatus.valueOf(statusStr.toUpperCase());
+            Table updatedTable = tableService.updateStatus(id, newStatus);
+            return ResponseEntity.ok(updatedTable);
+        }
+
+        /**
+         * Xóa bàn (chỉ khi ở trạng thái AVAILABLE)
+         */
+        @DeleteMapping("/{id}")
+        @PreAuthorize("hasAnyRole('ROOT', 'ADMIN')")
+        public ResponseEntity<Void> deleteTable(@PathVariable Long id) {
+            tableService.deleteById(id);
+            return ResponseEntity.noContent().build();
+        }
+    }
+    // =============== API: api manager quản lí đặt bàn reservation ===============
 }

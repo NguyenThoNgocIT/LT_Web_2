@@ -1,4 +1,4 @@
-package com.example.LT_Web2.services.iml;
+package com.example.LT_Web2.services.impl;
 
 import com.example.LT_Web2.entity.Product;
 import com.example.LT_Web2.entity.ProductStatus;
