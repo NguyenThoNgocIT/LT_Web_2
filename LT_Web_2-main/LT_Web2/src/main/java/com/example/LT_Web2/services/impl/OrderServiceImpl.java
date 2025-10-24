@@ -1,16 +1,17 @@
 package com.example.LT_Web2.services.impl;
 
+import com.example.LT_Web2.dto.request.OrderRequest;
 import com.example.LT_Web2.dto.response.OrderResponse;
 import com.example.LT_Web2.dto.response.ReportResponse;
-import com.example.LT_Web2.entity.Order;
-import com.example.LT_Web2.entity.OrderItem;
-import com.example.LT_Web2.entity.OrderStatus;
-import com.example.LT_Web2.entity.TableStatus;
+import com.example.LT_Web2.entity.*;
+import com.example.LT_Web2.exception.BusinessException;
 import com.example.LT_Web2.exception.ResourceNotFoundException;
 import com.example.LT_Web2.repository.OrderItemRepository;
 import com.example.LT_Web2.repository.OrderRepository;
 import com.example.LT_Web2.services.OrderService;
+import com.example.LT_Web2.services.ProductService;
 import com.example.LT_Web2.services.TableService;
+import com.example.LT_Web2.services.UserService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -19,6 +20,7 @@ import java.math.BigDecimal;
 import java.time.DayOfWeek;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.List;
 
 @Service
@@ -29,6 +31,57 @@ public class OrderServiceImpl implements OrderService {
     private final OrderRepository orderRepository;
     private final OrderItemRepository orderItemRepository;
     private final TableService tableService;
+    private final ProductService productService;
+    private final UserService userService;
+
+    public Order createOrder(OrderRequest request, Long customerId) {
+        // 1. Load table
+        Tables table = tableService.findById(request.getTableId());
+
+        // 2. Kiểm tra trạng thái bàn: phải là OCCUPIED hoặc RESERVED
+        if (table.getStatus() != TableStatus.OCCUPIED && table.getStatus() != TableStatus.RESERVED) {
+            throw new BusinessException("Chỉ có thể tạo đơn hàng cho bàn đang sử dụng");
+        }
+
+        // 3. Tạo đơn hàng
+        Order order = new Order();
+        order.setTable(table);
+        order.setCustomer(userService.getUserById(customerId)); // ← cần inject userService
+        order.setStatus(OrderStatus.PENDING);
+        order.setCreatedAt(LocalDateTime.now());
+
+        // 4. Tính tổng & lưu item
+        BigDecimal total = BigDecimal.ZERO;
+        List<OrderItem> items = new ArrayList<>();
+        for (OrderRequest.OrderItemRequest itemReq : request.getItems()) {
+            Product product = productService.findById(itemReq.getProductId());
+            BigDecimal price = product.getPrice();
+            total = total.add(price.multiply(BigDecimal.valueOf(itemReq.getQuantity())));
+
+            OrderItem item = new OrderItem();
+            item.setOrder(order);
+            item.setProduct(product);
+            item.setQuantity(itemReq.getQuantity());
+            item.setPriceAtOrder(price);
+            items.add(item);
+        }
+        order.setTotalAmount(total);
+        Order savedOrder = orderRepository.save(order);
+
+        // Lưu item
+        for (OrderItem item : items) {
+            item.setOrder(savedOrder);
+            orderItemRepository.save(item);
+        }
+
+        return savedOrder;
+    }
+
+    @Override
+    public List<OrderItem> getOrderItems(Long orderId) {
+        return orderItemRepository.findByOrderId(orderId);
+    }
+
 
     @Override
     public OrderResponse getOrderDetail(Long id) {

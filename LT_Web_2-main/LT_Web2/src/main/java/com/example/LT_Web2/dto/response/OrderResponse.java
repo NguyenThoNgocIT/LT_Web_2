@@ -15,6 +15,7 @@ public class OrderResponse {
     private BigDecimal totalAmount;
     private LocalDateTime createdAt;
     private String status;
+    private Long customerId;
     private List<OrderItemResponse> items;
 
     public OrderResponse(Order order, List<OrderItem> items) {
@@ -23,6 +24,7 @@ public class OrderResponse {
         this.customerName = order.getCustomer() != null ? order.getCustomer().getName() : "Ẩn danh";
         this.totalAmount = order.getTotalAmount();
         this.createdAt = order.getCreatedAt();
+        this.customerId = order.getCustomer().getId();
         this.status = order.getStatus().name();
         this.items = items.stream().map(OrderItemResponse::new).toList();
     }

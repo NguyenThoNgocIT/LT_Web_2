@@ -2,6 +2,7 @@ package com.example.LT_Web2.dto.request;
 
 import com.fasterxml.jackson.annotation.JsonFormat;
 import jakarta.validation.constraints.Future;
+import jakarta.validation.constraints.FutureOrPresent;
 import jakarta.validation.constraints.NotNull;
 import lombok.Data;
 
@@ -12,7 +13,7 @@ public class ReservationRequest {
     @NotNull(message = "Bắt buộc chọn bàn")
     private Long tableId;
 
-    @Future(message = "Thời gian đặt bàn phải ở tương lai")
+    @FutureOrPresent(message = "Thời gian đặt bàn phải ở tương lai")
     @NotNull(message = "Bắt buộc chọn thời gian")
     @JsonFormat(pattern = "yyyy-MM-dd'T'HH:mm:ss")
     private LocalDateTime reservationTime;
