@@ -1,7 +1,8 @@
 package com.example.LT_Web2.dto.response;
 
-import com.example.LT_Web2.entity.TableStatus;
+import lombok.Data;
 
+@Data
 public class TableResponse {
 
     private Long id;

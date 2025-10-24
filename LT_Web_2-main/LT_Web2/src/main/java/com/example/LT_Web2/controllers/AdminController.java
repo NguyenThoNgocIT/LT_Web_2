@@ -1,12 +1,11 @@
 package com.example.LT_Web2.controllers;
 
 import com.example.LT_Web2.dto.request.ReservationRequest;
+import com.example.LT_Web2.dto.response.OrderResponse;
+import com.example.LT_Web2.dto.response.ReportResponse;
 import com.example.LT_Web2.dto.response.ReservationResponse;
 import com.example.LT_Web2.entity.*;
-import com.example.LT_Web2.services.ProductService;
-import com.example.LT_Web2.services.ReservationService;
-import com.example.LT_Web2.services.TableService;
-import com.example.LT_Web2.services.UserService;
+import com.example.LT_Web2.services.*;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -331,6 +330,76 @@ public class AdminController {
                 return ((User) authentication.getPrincipal()).getId();
             }
             throw new IllegalStateException("Không thể lấy userId từ SecurityContext");
+        }
+    }
+    // =============== API: api manager quản lí oder and báo cáo   ===============
+    @RestController
+    @RequestMapping("/api/orders")
+    @RequiredArgsConstructor
+    public class OrderController {
+
+        private final OrderService orderService;
+
+        // 👨‍💼 Admin: xem tất cả đơn hàng
+        @GetMapping
+        @PreAuthorize("hasAnyRole('ROOT', 'ADMIN')")
+        public ResponseEntity<List<OrderResponse>> getAllOrders() {
+            return ResponseEntity.ok(orderService.getAllOrders());
+        }
+
+        // 👁️‍ Khách: xem đơn hàng của mình
+        @GetMapping("/my")
+        @PreAuthorize("hasRole('USER')")
+        public ResponseEntity<List<OrderResponse>> getMyOrders() {
+            Long userId = getCurrentUserId();
+            return ResponseEntity.ok(orderService.getOrdersByCustomer(userId));
+        }
+
+        // 👁️‍ Xem chi tiết đơn hàng
+        @GetMapping("/{id}")
+        @PreAuthorize("hasAnyRole('ROOT', 'ADMIN', 'USER')")
+        public ResponseEntity<OrderResponse> getOrderDetail(@PathVariable Long id) {
+            return ResponseEntity.ok(orderService.getOrderDetail(id));
+        }
+
+        // 👨‍💼 Admin: cập nhật trạng thái
+        @PutMapping("/{id}/status")
+        @PreAuthorize("hasAnyRole('ROOT', 'ADMIN')")
+        public ResponseEntity<Order> updateOrderStatus(
+                @PathVariable Long id,
+                @RequestBody Map<String, String> request) {
+            String statusStr = request.get("status");
+            OrderStatus status = OrderStatus.valueOf(statusStr.toUpperCase());
+            Order updated = orderService.updateOrderStatus(id, status);
+            return ResponseEntity.ok(updated);
+        }
+
+        // 📊 Báo cáo
+        @GetMapping("/report/daily")
+        @PreAuthorize("hasAnyRole('ROOT', 'ADMIN')")
+        public ResponseEntity<ReportResponse> getDailyReport() {
+            return ResponseEntity.ok(orderService.getDailyReport());
+        }
+
+        @GetMapping("/report/weekly")
+        @PreAuthorize("hasAnyRole('ROOT', 'ADMIN')")
+        public ResponseEntity<ReportResponse> getWeeklyReport() {
+            return ResponseEntity.ok(orderService.getWeeklyReport());
+        }
+
+        @GetMapping("/report/monthly")
+        @PreAuthorize("hasAnyRole('ROOT', 'ADMIN')")
+        public ResponseEntity<ReportResponse> getMonthlyReport() {
+            return ResponseEntity.ok(orderService.getMonthlyReport());
+        }
+
+        // Helper
+        private Long getCurrentUserId() {
+            var auth = SecurityContextHolder.getContext().getAuthentication();
+            if (auth != null && auth.getPrincipal() instanceof User) {
+                return ((User) auth.getPrincipal()).getId();
+            }
+            throw new IllegalStateException("User not authenticated");
         }
     }
 }

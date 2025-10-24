@@ -1,7 +1,9 @@
 package com.example.LT_Web2.dto.response;
 
-import java.math.BigDecimal;
+import lombok.Data;
 
+import java.math.BigDecimal;
+@Data
 public class ProductResponse {
     private Long id;
     private String name;

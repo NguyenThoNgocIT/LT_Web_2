@@ -1,10 +1,10 @@
 package com.example.LT_Web2.dto.response;
 
-import com.example.LT_Web2.entity.ReservationStatus;
 import com.fasterxml.jackson.annotation.JsonFormat;
+import lombok.Data;
 
 import java.time.LocalDateTime;
-
+@Data
 public class ReservationResponse {
 
     private Long id;
