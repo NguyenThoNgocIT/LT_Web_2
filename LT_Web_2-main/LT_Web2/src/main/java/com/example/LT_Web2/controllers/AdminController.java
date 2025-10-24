@@ -1,10 +1,10 @@
 package com.example.LT_Web2.controllers;
 
-import com.example.LT_Web2.entity.Product;
-import com.example.LT_Web2.entity.Table;
-import com.example.LT_Web2.entity.TableStatus;
-import com.example.LT_Web2.entity.User;
+import com.example.LT_Web2.dto.request.ReservationRequest;
+import com.example.LT_Web2.dto.response.ReservationResponse;
+import com.example.LT_Web2.entity.*;
 import com.example.LT_Web2.services.ProductService;
+import com.example.LT_Web2.services.ReservationService;
 import com.example.LT_Web2.services.TableService;
 import com.example.LT_Web2.services.UserService;
 import jakarta.validation.Valid;
@@ -12,6 +12,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.*;
@@ -202,7 +203,7 @@ public class AdminController {
          */
         @GetMapping
         @PreAuthorize("hasAnyRole('ROOT', 'ADMIN')")
-        public ResponseEntity<List<Table>> getAllTables() {
+        public ResponseEntity<List<Tables>> getAllTables() {
             return ResponseEntity.ok(tableService.findAll());
         }
 
@@ -211,7 +212,7 @@ public class AdminController {
          */
         @GetMapping("/status/{status}")
         @PreAuthorize("hasAnyRole('ROOT', 'ADMIN')")
-        public ResponseEntity<List<Table>> getTablesByStatus(@PathVariable String status) {
+        public ResponseEntity<List<Tables>> getTablesByStatus(@PathVariable String status) {
             TableStatus tableStatus = TableStatus.valueOf(status.toUpperCase());
             return ResponseEntity.ok(tableService.findByStatus(tableStatus));
         }
@@ -221,8 +222,11 @@ public class AdminController {
          */
         @PostMapping
         @PreAuthorize("hasAnyRole('ROOT', 'ADMIN')")
-        public ResponseEntity<Table> createTable(@Valid @RequestBody Table table) {
-            return ResponseEntity.ok(tableService.save(table));
+        public ResponseEntity <List<Tables>> createTables(
+                @Valid
+                @RequestBody
+                List<Tables> table) {
+            return ResponseEntity.ok(tableService.saveAll(table));
         }
 
         /**
@@ -230,10 +234,10 @@ public class AdminController {
          */
         @PutMapping("/{id}")
         @PreAuthorize("hasAnyRole('ROOT', 'ADMIN')")
-        public ResponseEntity<Table> updateTable(
+        public ResponseEntity<Tables> updateTable(
                 @PathVariable Long id,
-                @Valid @RequestBody Table tableUpdate) {
-            Table existingTable = tableService.findById(id);
+                @Valid @RequestBody Tables tableUpdate) {
+            Tables existingTable = tableService.findById(id);
             existingTable.setName(tableUpdate.getName());
             existingTable.setLocation(tableUpdate.getLocation());
             // Không cho phép đổi trạng thái qua endpoint này
@@ -245,7 +249,7 @@ public class AdminController {
          */
         @PutMapping("/{id}/status")
         @PreAuthorize("hasAnyRole('ROOT', 'ADMIN')")
-        public ResponseEntity<Table> updateTableStatus(
+        public ResponseEntity<Tables> updateTableStatus(
                 @PathVariable Long id,
                 @RequestBody Map<String, String> request) {
 
@@ -255,7 +259,7 @@ public class AdminController {
             }
 
             TableStatus newStatus = TableStatus.valueOf(statusStr.toUpperCase());
-            Table updatedTable = tableService.updateStatus(id, newStatus);
+            Tables updatedTable = tableService.updateStatus(id, newStatus);
             return ResponseEntity.ok(updatedTable);
         }
 
@@ -269,5 +273,64 @@ public class AdminController {
             return ResponseEntity.noContent().build();
         }
     }
+
     // =============== API: api manager quản lí đặt bàn reservation ===============
+    @RestController
+    @RequestMapping("/api/reservations")
+    @RequiredArgsConstructor
+    public class ReservationController {
+
+        private final ReservationService reservationService;
+
+        // 🧑‍ Khách đặt bàn
+        @PostMapping
+        @PreAuthorize("hasRole('USER')")
+        public ResponseEntity<ReservationResponse> createReservation(@Valid @RequestBody ReservationRequest request) {
+            Long currentUserId = getCurrentUserId();
+            Reservation reservation = reservationService.createReservation(request, currentUserId);
+            return ResponseEntity.ok(new ReservationResponse(reservation));
+        }
+
+        // 👁️‍ Khách xem lịch sử đặt bàn của mình
+        @GetMapping("/my")
+        @PreAuthorize("hasRole('USER')")
+        public ResponseEntity<List<ReservationResponse>> getMyReservations() {
+            Long userId = getCurrentUserId();
+            List<Reservation> reservations = reservationService.getReservationsByCustomer(userId);
+            List<ReservationResponse> response = reservations.stream()
+                    .map(ReservationResponse::new)
+                    .toList();
+            return ResponseEntity.ok(response);
+        }
+
+        // 👨‍💼 Admin: xem tất cả
+        @GetMapping
+        @PreAuthorize("hasAnyRole('ROOT', 'ADMIN')")
+        public ResponseEntity<List<Reservation>> getAllReservations() {
+            return ResponseEntity.ok(reservationService.getAllReservations());
+        }
+
+        // ✅ Admin xác nhận
+        @PutMapping("/{id}/confirm")
+        @PreAuthorize("hasAnyRole('ROOT', 'ADMIN')")
+        public ResponseEntity<Reservation> confirm(@PathVariable Long id) {
+            return ResponseEntity.ok(reservationService.confirmReservation(id));
+        }
+
+        // ❌ Admin hoặc khách hủy
+        @PutMapping("/{id}/cancel")
+        @PreAuthorize("hasAnyRole('ROOT', 'ADMIN', 'USER')")
+        public ResponseEntity<Reservation> cancel(@PathVariable Long id) {
+            return ResponseEntity.ok(reservationService.cancelReservation(id));
+        }
+
+        // 🔒 Helper: lấy ID user hiện tại từ SecurityContext (bạn cần implement)
+        private Long getCurrentUserId() {
+            var authentication = SecurityContextHolder.getContext().getAuthentication();
+            if (authentication != null && authentication.getPrincipal() instanceof User) {
+                return ((User) authentication.getPrincipal()).getId();
+            }
+            throw new IllegalStateException("Không thể lấy userId từ SecurityContext");
+        }
+    }
 }

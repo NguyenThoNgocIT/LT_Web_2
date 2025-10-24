@@ -7,9 +7,9 @@ import lombok.Data;
 
 
 @Entity
-(name="tables")
+@Table(name="tables")
 @Data
-public class Table {
+public class Tables {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;

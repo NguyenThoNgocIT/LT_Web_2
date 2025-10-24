@@ -1,14 +1,15 @@
 package com.example.LT_Web2.services;
 
-import com.example.LT_Web2.entity.Table;
+import com.example.LT_Web2.entity.Tables;
 import com.example.LT_Web2.entity.TableStatus;
 import java.util.List;
 
 public interface TableService {
-    Table save(Table table);
-    Table findById(Long id);
-    List<Table> findAll();
-    List<Table> findByStatus(TableStatus status);
+    Tables save(Tables table);
+    List<Tables> saveAll(List<Tables> tables);
+    Tables findById(Long id);
+    List<Tables> findAll();
+    List<Tables> findByStatus(TableStatus status);
     void deleteById(Long id);
-    Table updateStatus(Long id, TableStatus status);
+    Tables updateStatus(Long id, TableStatus status);
 }

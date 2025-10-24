@@ -1,5 +1,5 @@
 package com.example.LT_Web2.services.impl;
-import com.example.LT_Web2.entity.Table;
+import com.example.LT_Web2.entity.Tables;
 import com.example.LT_Web2.entity.TableStatus;
 import com.example.LT_Web2.exception.BusinessException;
 import com.example.LT_Web2.exception.ResourceNotFoundException;
@@ -30,7 +30,7 @@ public class TableServiceImpl implements TableService {
     private static final Set<TableStatus> FROM_COMPLETED = Set.of(TableStatus.AVAILABLE);
 
     @Override
-    public Table save(Table table) {
+    public Tables save(Tables table) {
         if (table.getName() == null || table.getName().trim().isEmpty()) {
             throw new IllegalArgumentException("Tên bàn không được để trống");
         }
@@ -43,25 +43,37 @@ public class TableServiceImpl implements TableService {
         }
         return tableRepository.save(table);
     }
+    @Override
+    public List<Tables> saveAll(List<Tables> tables) {
+        for (Tables table : tables) {
+            if (table.getName() == null || table.getName().trim().isEmpty()) {
+                throw new IllegalArgumentException("Tên bàn không được để trống");
+            }
+            if (tableRepository.existsByName(table.getName())) {
+                throw new BusinessException("Đã tồn tại bàn có tên: " + table.getName());
+            }
+        }
+        return tableRepository.saveAll(tables);
+    }
 
     @Override
-    public List<Table> findByStatus(TableStatus status) {
+    public List<Tables> findByStatus(TableStatus status) {
         return tableRepository.findByStatus(status);
     }
     @Override
-    public Table findById(Long id) {
+    public Tables findById(Long id) {
         return tableRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy bàn với ID: " + id));
     }
 
     @Override
-    public List<Table> findAll() {
+    public List<Tables> findAll() {
         return tableRepository.findAll();
     }
 
     @Override
     public void deleteById(Long id) {
-        Table table = findById(id);
+        Tables table = findById(id);
         if (table.getStatus() != TableStatus.AVAILABLE) {
             throw new BusinessException("Chỉ có thể xóa bàn đang ở trạng thái 'Trống'");
         }
@@ -69,8 +81,8 @@ public class TableServiceImpl implements TableService {
     }
 
     @Override
-    public Table updateStatus(Long id, TableStatus newStatus) {
-        Table table = findById(id);
+    public Tables updateStatus(Long id, TableStatus newStatus) {
+        Tables table = findById(id);
         TableStatus currentStatus = table.getStatus();
 
         // 🔒 Kiểm tra chuyển trạng thái hợp lệ
@@ -100,7 +112,7 @@ public class TableServiceImpl implements TableService {
     }
 
     // 💡 (Mở rộng) Phương thức tiện ích: lấy tất cả bàn trống hoặc có thể dùng ngay
-    public List<Table> getAvailableOrReservedTables() {
+    public List<Tables> getAvailableOrReservedTables() {
         return tableRepository.findByStatusIn(Arrays.asList(TableStatus.AVAILABLE, TableStatus.RESERVED));
     }
 }
