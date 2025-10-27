@@ -53,7 +53,7 @@ public class AdminOrderController {
             return ResponseEntity.badRequest().body("Invalid status value: " + statusStr);
         }
     }
-
+/////////////////////////////////////////////////////////////////////////////// báo cáo doanh thu theo ngày, tuần, tháng
     @GetMapping("/report/daily")
     @PreAuthorize("hasAnyRole('ROOT', 'ADMIN')")
     public ResponseEntity<ReportResponse> getDailyReport() {

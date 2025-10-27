@@ -67,7 +67,7 @@ public class UserOrderController {
         return ResponseEntity.ok(order);
     }
 
-    // Helper: Lấy ID người dùng hiện tại từ JWT
+    // Helper: Lấy ID người dùng hiện tại từ JWT hoặc context bảo mật của Spring Security.
     private Long getCurrentUserId() {
         var auth = SecurityContextHolder.getContext().getAuthentication();
         if (auth != null && auth.getPrincipal() instanceof User) {
