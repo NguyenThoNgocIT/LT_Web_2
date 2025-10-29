@@ -8,7 +8,7 @@ const Header = () => {
   const navigate = useNavigate();
   const isLoggedIn = localStorage.getItem('token') !== null;
   const user = JSON.parse(localStorage.getItem('user') || '{}');
-  const isAdmin = user.role === 'ADMIN';
+  const isAdmin = Array.isArray(user.roles) && (user.roles.includes('ADMIN') || user.roles.includes('ROOT'));
 
   const handleLogout = () => {
     localStorage.removeItem('token');
@@ -36,6 +36,16 @@ const Header = () => {
             <Link to="/book" className="text-gray-700 hover:text-gray-900">
               Đặt bàn
             </Link>
+             {isLoggedIn && (
+               <Link to="/user/reservations" className="text-gray-700 hover:text-gray-900">
+                 Lịch sử đặt bàn
+               </Link>
+             )}
+             {isLoggedIn && (
+               <Link to="/user/orders" className="text-gray-700 hover:text-gray-900">
+                 Lịch sử đơn hàng
+               </Link>
+             )}
             {isAdmin && (
               <Link to="/admin" className="text-gray-700 hover:text-gray-900">
                 Quản lý
@@ -53,7 +63,7 @@ const Header = () => {
                 </Button>
                 <Button variant="ghost" size="sm">
                   <User className="w-5 h-5 mr-2" />
-                  {user.username}
+                  {user.name || user.email}
                 </Button>
                 <Button
                   variant="ghost"
@@ -120,6 +130,24 @@ const Header = () => {
               >
                 Đặt bàn
               </Link>
+               {isLoggedIn && (
+                 <Link
+                   to="/user/reservations"
+                   className="px-4 py-2 text-gray-700 hover:bg-gray-100 rounded"
+                   onClick={() => setIsMenuOpen(false)}
+                 >
+                   Lịch sử đặt bàn
+                 </Link>
+               )}
+               {isLoggedIn && (
+                 <Link
+                   to="/user/orders"
+                   className="px-4 py-2 text-gray-700 hover:bg-gray-100 rounded"
+                   onClick={() => setIsMenuOpen(false)}
+                 >
+                   Lịch sử đơn hàng
+                 </Link>
+               )}
               {isAdmin && (
                 <Link
                   to="/admin"
@@ -133,7 +161,7 @@ const Header = () => {
                 <>
                   <div className="px-4 py-2 text-gray-700">
                     <User className="w-5 h-5 inline mr-2" />
-                    {user.username}
+                    {user.name || user.email}
                   </div>
                   <button
                     onClick={handleLogout}

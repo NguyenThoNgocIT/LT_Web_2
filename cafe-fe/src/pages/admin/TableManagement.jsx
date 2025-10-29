@@ -59,6 +59,8 @@ export default function TableManagement() {
         return 'bg-red-100 text-red-800';
       case 'RESERVED':
         return 'bg-yellow-100 text-yellow-800';
+      case 'COMPLETED':
+        return 'bg-blue-100 text-blue-800';
       default:
         return 'bg-gray-100 text-gray-800';
     }
@@ -72,6 +74,8 @@ export default function TableManagement() {
         return 'Có khách';
       case 'RESERVED':
         return 'Đã đặt';
+      case 'COMPLETED':
+        return 'Hoàn thành';
       default:
         return status;
     }
@@ -128,6 +132,13 @@ export default function TableManagement() {
                 onClick={() => handleStatusChange(table.id, 'RESERVED')}
               >
                 Đặt trước
+              </Button>
+              <Button
+                variant={table.status === 'COMPLETED' ? 'default' : 'outline'}
+                size="sm"
+                onClick={() => handleStatusChange(table.id, 'COMPLETED')}
+              >
+                Hoàn thành
               </Button>
             </div>
           </div>

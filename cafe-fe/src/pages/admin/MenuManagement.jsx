@@ -1,12 +1,14 @@
 import { useState, useEffect } from 'react';
 import { Plus, Pencil, Trash2 } from 'lucide-react';
 import { Button } from '../../components/ui/button';
-import { getAllProducts, createProduct, deleteProduct } from '../../api/product.api';
+import { getAllProducts, createProduct, updateProduct, deleteProduct } from '../../api/product.api';
 import { toast } from 'sonner';
 
 export default function MenuManagement() {
   const [products, setProducts] = useState([]);
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
+  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+  const [editingProduct, setEditingProduct] = useState(null);
   const [formData, setFormData] = useState({
     name: '',
     price: '',
@@ -17,13 +19,21 @@ export default function MenuManagement() {
   const handleSubmit = async (e) => {
     e.preventDefault();
     try {
-      await createProduct(formData);
-      toast.success('Thêm món thành công');
-      setIsAddModalOpen(false);
+      if (editingProduct) {
+        await updateProduct(editingProduct.id, formData);
+        toast.success('Cập nhật món thành công');
+        setIsEditModalOpen(false);
+        setEditingProduct(null);
+      } else {
+        await createProduct(formData);
+        toast.success('Thêm món thành công');
+        setIsAddModalOpen(false);
+      }
       fetchProducts();
+      setFormData({ name: '', price: '', category: '', description: '' });
     } catch (error) {
-      console.error('Error adding product:', error);
-      toast.error('Lỗi thêm món: ' + (error.response?.data || 'Đã có lỗi xảy ra'));
+      console.error('Error saving product:', error);
+      toast.error('Lỗi: ' + (error.response?.data || 'Đã có lỗi xảy ra'));
     }
   };
 
@@ -84,7 +94,21 @@ export default function MenuManagement() {
                 <td className="px-6 py-4">{product.price.toLocaleString()}đ</td>
                 <td className="px-6 py-4">{product.description}</td>
                 <td className="px-6 py-4 text-right">
-                  <Button variant="ghost" size="sm" className="mr-2">
+                  <Button 
+                    variant="ghost" 
+                    size="sm" 
+                    className="mr-2"
+                    onClick={() => {
+                      setEditingProduct(product);
+                      setFormData({
+                        name: product.name,
+                        price: product.price,
+                        category: product.category,
+                        description: product.description || '',
+                      });
+                      setIsEditModalOpen(true);
+                    }}
+                  >
                     <Pencil className="w-4 h-4" />
                   </Button>
                   <Button 
@@ -103,7 +127,7 @@ export default function MenuManagement() {
 
       {/* Add Product Modal */}
       {isAddModalOpen && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center">
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
           <div className="bg-white p-6 rounded-lg w-full max-w-md">
             <h2 className="text-xl font-bold mb-4">Thêm món mới</h2>
             <form onSubmit={handleSubmit}>
@@ -156,12 +180,87 @@ export default function MenuManagement() {
                 <Button 
                   type="button" 
                   variant="outline"
-                  onClick={() => setIsAddModalOpen(false)}
+                  onClick={() => {
+                    setIsAddModalOpen(false);
+                    setFormData({ name: '', price: '', category: '', description: '' });
+                  }}
                 >
                   Hủy
                 </Button>
                 <Button type="submit">
                   Thêm món
+                </Button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* Edit Product Modal */}
+      {isEditModalOpen && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white p-6 rounded-lg w-full max-w-md">
+            <h2 className="text-xl font-bold mb-4">Chỉnh sửa món</h2>
+            <form onSubmit={handleSubmit}>
+              <div className="space-y-4">
+                <div>
+                  <label className="block mb-1">Tên món</label>
+                  <input
+                    type="text"
+                    className="w-full p-2 border rounded"
+                    value={formData.name}
+                    onChange={(e) => setFormData({...formData, name: e.target.value})}
+                    required
+                  />
+                </div>
+                <div>
+                  <label className="block mb-1">Danh mục</label>
+                  <select
+                    className="w-full p-2 border rounded"
+                    value={formData.category}
+                    onChange={(e) => setFormData({...formData, category: e.target.value})}
+                    required
+                  >
+                    <option value="">Chọn danh mục</option>
+                    <option value="Cà phê">Cà phê</option>
+                    <option value="Trà">Trà</option>
+                    <option value="Đồ uống đặc biệt">Đồ uống đặc biệt</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="block mb-1">Giá</label>
+                  <input
+                    type="number"
+                    className="w-full p-2 border rounded"
+                    value={formData.price}
+                    onChange={(e) => setFormData({...formData, price: e.target.value})}
+                    required
+                  />
+                </div>
+                <div>
+                  <label className="block mb-1">Mô tả</label>
+                  <textarea
+                    className="w-full p-2 border rounded"
+                    value={formData.description}
+                    onChange={(e) => setFormData({...formData, description: e.target.value})}
+                    rows="3"
+                  />
+                </div>
+              </div>
+              <div className="flex justify-end space-x-4 mt-6">
+                <Button 
+                  type="button" 
+                  variant="outline"
+                  onClick={() => {
+                    setIsEditModalOpen(false);
+                    setEditingProduct(null);
+                    setFormData({ name: '', price: '', category: '', description: '' });
+                  }}
+                >
+                  Hủy
+                </Button>
+                <Button type="submit">
+                  Cập nhật
                 </Button>
               </div>
             </form>

@@ -6,33 +6,52 @@ import AdminLayout from './components/AdminLayout';
 import UserLayout from './layouts/UserLayout';
 import MenuManagement from './pages/admin/MenuManagement';
 import TableManagement from './pages/admin/TableManagement';
-import UserManagement from './pages/admin/UserManagement';
+// import UserManagement from './pages/admin/UserManagement'; // Disabled: backend doesn't have /api/users endpoints
 import OrderManagement from './pages/admin/OrderManagement';
 import Dashboard from './pages/admin/Dashboard';
 import MenuPage from './pages/user/MenuPage';
 import BookingPage from './pages/user/BookingPage';
+import DebugAuth from './pages/admin/DebugAuth';
 
 function App() {
-  // Check if user is authenticated
-  const isAuthenticated = () => {
-    return localStorage.getItem('token') !== null;
-  };
-
-  // Check if user is admin
-  const isAdmin = () => {
-    const user = JSON.parse(localStorage.getItem('user') || '{}');
-    return user.role === 'ADMIN';
-  };
-
   // Protected Route component
   const ProtectedRoute = ({ children, requireAdmin }) => {
-    // if (!isAuthenticated()) {
-    //   return <Navigate to="/login" />;
-    // }
+    const hasToken = localStorage.getItem('token') !== null;
+    const userStr = localStorage.getItem('user');
+    
+    console.log('🔒 ProtectedRoute check:', {
+      requireAdmin,
+      hasToken,
+      userStr,
+      timestamp: new Date().toISOString()
+    });
 
-    // if (requireAdmin && !isAdmin()) {
-    //   return <Navigate to="/user" />;
-    // }
+    if (!hasToken) {
+      console.warn('⚠️ No token found, redirecting to /login');
+      return <Navigate to="/login" replace />;
+    }
+
+    if (requireAdmin) {
+      try {
+        const user = JSON.parse(userStr || '{}');
+        const roles = Array.isArray(user.roles) ? user.roles : [];
+        const isUserAdmin = roles.includes('ADMIN') || roles.includes('ROOT');
+        
+        console.log('🔒 Admin check:', {
+          user,
+          roles,
+          isUserAdmin
+        });
+
+        if (!isUserAdmin) {
+          console.warn('⚠️ User is not admin, redirecting to /');
+          return <Navigate to="/" replace />;
+        }
+      } catch (e) {
+        console.error('❌ Error parsing user from localStorage:', e);
+        return <Navigate to="/login" replace />;
+      }
+    }
 
     return children;
   };
@@ -56,13 +75,14 @@ function App() {
             </AdminLayout>
           </ProtectedRoute>
         } />
-        <Route path="/admin/users" element={
+        {/* Temporarily disabled: backend doesn't have /api/users endpoints yet */}
+        {/* <Route path="/admin/users" element={
           <ProtectedRoute requireAdmin={true}>
             <AdminLayout>
               <UserManagement />
             </AdminLayout>
           </ProtectedRoute>
-        } />
+        } /> */}
         <Route path="/admin/menu" element={
           <ProtectedRoute requireAdmin={true}>
             <AdminLayout>
@@ -91,6 +111,13 @@ function App() {
             </AdminLayout>
           </ProtectedRoute>
         } />
+        <Route path="/admin/debug" element={
+          <ProtectedRoute requireAdmin={true}>
+            <AdminLayout>
+              <DebugAuth />
+            </AdminLayout>
+          </ProtectedRoute>
+        } />
 
         {/* User Routes */}
         <Route path="/user" element={
@@ -110,6 +137,20 @@ function App() {
             <BookingPage />
           </UserLayout>
         } />
+         <Route path="/user/reservations" element={
+           <ProtectedRoute requireAdmin={false}>
+             <UserLayout>
+               {require('./pages/user/ReservationHistory.jsx').default()}
+             </UserLayout>
+           </ProtectedRoute>
+         } />
+         <Route path="/user/orders" element={
+           <ProtectedRoute requireAdmin={false}>
+             <UserLayout>
+               {require('./pages/user/OrderHistory.jsx').default()}
+             </UserLayout>
+           </ProtectedRoute>
+         } />
       </Routes>
     </Router>
   );

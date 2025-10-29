@@ -1,4 +1,5 @@
 package com.example.LT_Web2.services.impl;
+
 import com.example.LT_Web2.entity.Tables;
 import com.example.LT_Web2.entity.TableStatus;
 import com.example.LT_Web2.exception.BusinessException;
@@ -24,7 +25,7 @@ public class TableServiceImpl implements TableService {
     private static final Set<TableStatus> FROM_AVAILABLE = Set.of(TableStatus.RESERVED, TableStatus.OCCUPIED);
     // Từ RESERVED
     private static final Set<TableStatus> FROM_RESERVED = Set.of(TableStatus.OCCUPIED, TableStatus.AVAILABLE);
-    // Từ OCCUPIED
+    // Từ OCCUPIED - Chỉ cho phép chuyển sang COMPLETED (phải hoàn thành trước)
     private static final Set<TableStatus> FROM_OCCUPIED = Set.of(TableStatus.COMPLETED);
     // Từ COMPLETED
     private static final Set<TableStatus> FROM_COMPLETED = Set.of(TableStatus.AVAILABLE);
@@ -43,6 +44,7 @@ public class TableServiceImpl implements TableService {
         }
         return tableRepository.save(table);
     }
+
     @Override
     public List<Tables> saveAll(List<Tables> tables) {
         for (Tables table : tables) {
@@ -60,6 +62,7 @@ public class TableServiceImpl implements TableService {
     public List<Tables> findByStatus(TableStatus status) {
         return tableRepository.findByStatus(status);
     }
+
     @Override
     public Tables findById(Long id) {
         return tableRepository.findById(id)
@@ -85,16 +88,24 @@ public class TableServiceImpl implements TableService {
         Tables table = findById(id);
         TableStatus currentStatus = table.getStatus();
 
+        System.out.println("🔄 [TableService] Updating table #" + id);
+        System.out.println("   Current status: " + currentStatus);
+        System.out.println("   New status: " + newStatus);
+        System.out.println("   Is valid transition: " + isValidTransition(currentStatus, newStatus));
+
         // 🔒 Kiểm tra chuyển trạng thái hợp lệ
         if (!isValidTransition(currentStatus, newStatus)) {
-            throw new BusinessException(
-                    String.format("Không thể chuyển bàn từ trạng thái '%s' sang '%s'",
-                            currentStatus, newStatus)
-            );
+            String errorMsg = String.format(
+                    "Không thể chuyển bàn từ trạng thái '%s' sang '%s'. Vui lòng chuyển qua trạng thái trung gian trước.",
+                    currentStatus, newStatus);
+            System.err.println("❌ [TableService] " + errorMsg);
+            throw new BusinessException(errorMsg);
         }
 
         table.setStatus(newStatus);
-        return tableRepository.save(table);
+        Tables saved = tableRepository.save(table);
+        System.out.println("✅ [TableService] Table status updated successfully");
+        return saved;
     }
 
     // ✅ Hàm kiểm tra luồng trạng thái hợp lệ

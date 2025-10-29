@@ -30,20 +30,37 @@ public class ReservationServiceImpl implements ReservationService {
 
     @Override
     public Reservation createReservation(ReservationRequest request, Long customerId) {
+        System.out.println("🔔 [Reservation] Creating reservation...");
+        System.out.println("   Table ID: " + request.getTableId());
+        System.out.println("   Customer ID: " + customerId);
+        System.out.println("   Reservation Time: " + request.getReservationTime());
+        System.out.println("   Note: " + request.getNote());
+
         // 1. Kiểm tra thời gian
         if (request.getReservationTime().isBefore(LocalDateTime.now())) {
+            System.err.println("❌ [Reservation] Time is in the past");
             throw new BusinessException("Thời gian đặt bàn phải lớn hơn thời gian hiện tại");
         }
 
         // 2. Load Table và User
         Tables table = tableRepository.findById(request.getTableId())
-                .orElseThrow(() -> new ResourceNotFoundException("Bàn không tồn tại"));
+                .orElseThrow(() -> {
+                    System.err.println("❌ [Reservation] Table not found: " + request.getTableId());
+                    return new ResourceNotFoundException("Bàn không tồn tại");
+                });
 
         User customer = userRepository.findById(customerId)
-                .orElseThrow(() -> new ResourceNotFoundException("Khách hàng không tồn tại"));
+                .orElseThrow(() -> {
+                    System.err.println("❌ [Reservation] Customer not found: " + customerId);
+                    return new ResourceNotFoundException("Khách hàng không tồn tại");
+                });
+
+        System.out.println("✅ [Reservation] Table found: " + table.getName() + " (status: " + table.getStatus() + ")");
+        System.out.println("✅ [Reservation] Customer found: " + customer.getName());
 
         // 3. Kiểm tra bàn có sẵn không
         if (table.getStatus() != TableStatus.AVAILABLE) {
+            System.err.println("❌ [Reservation] Table is not available: " + table.getStatus());
             throw new BusinessException("Bàn này hiện không khả dụng để đặt trước");
         }
 
@@ -55,7 +72,14 @@ public class ReservationServiceImpl implements ReservationService {
         reservation.setNote(request.getNote());
         reservation.setStatus(ReservationStatus.PENDING);
 
-        return reservationRepository.save(reservation);
+        Reservation saved = reservationRepository.save(reservation);
+        System.out.println("✅ [Reservation] Reservation created successfully: #" + saved.getId());
+
+        // 5. ✅ Cập nhật trạng thái bàn sang RESERVED ngay lập tức
+        tableService.updateStatus(table.getId(), TableStatus.RESERVED);
+        System.out.println("✅ [Reservation] Table #" + table.getId() + " updated to RESERVED");
+
+        return saved;
     }
 
     @Override
@@ -125,12 +149,14 @@ public class ReservationServiceImpl implements ReservationService {
             }
         }
     }
+
     @Component
     @RequiredArgsConstructor
     public class ReservationScheduler {
         private final ReservationService reservationService;
+
         @Scheduled(fixedRate = 90000)
-        public void handleNoShow(){
+        public void handleNoShow() {
             reservationService.handleNoShowReservations();
         }
     }

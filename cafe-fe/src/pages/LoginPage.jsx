@@ -19,17 +19,30 @@ export default function LoginPage() {
 
     try {
       const data = await login(formData);
+      console.log('🔐 Login successful:', {
+        hasToken: !!data.token,
+        hasUser: !!data.user,
+        roles: data.user?.roles
+      });
+      
       // Store the token and user info
       localStorage.setItem('token', data.token);
       localStorage.setItem('user', JSON.stringify(data.user));
+      
+      console.log('💾 Stored in localStorage:', {
+        token: localStorage.getItem('token')?.substring(0, 20) + '...',
+        user: localStorage.getItem('user')
+      });
       
       toast.success('Đăng nhập thành công');
       
       // Redirect based on role - backend returns roles array
       const roles = data.user.roles || [];
       if (roles.includes('ADMIN') || roles.includes('ROOT')) {
+        console.log('➡️ Navigating to /admin');
         navigate('/admin');
       } else {
+        console.log('➡️ Navigating to /');
         navigate('/');
       }
     } catch (err) {

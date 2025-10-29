@@ -1,7 +1,22 @@
 import { useState, useEffect } from 'react';
 import { Clock, Coffee, Users, DollarSign, TrendingUp } from 'lucide-react';
+import { getOrders } from '../../api/order.api';
+import { getAllProducts } from '../../api/product.api';
 
 export default function Dashboard() {
+  // Revenue report state
+  const [revenueType, setRevenueType] = useState('day');
+  const [revenueData, setRevenueData] = useState({ labels: [], values: [], total: 0 });
+  const fetchRevenue = async (type = revenueType) => {
+    try {
+      const res = await fetch(`/api/admin/revenue?type=${type}`);
+      const data = await res.json();
+      setRevenueData(data);
+    } catch (err) {
+      setRevenueData({ labels: [], values: [], total: 0 });
+    }
+  };
+  useEffect(() => { fetchRevenue(revenueType); }, [revenueType]);
   const [stats, setStats] = useState({
     totalOrders: 0,
     totalRevenue: 0,
@@ -14,31 +29,35 @@ export default function Dashboard() {
 
   const fetchStats = async () => {
     try {
-      const response = await fetch('http://localhost:8080/api/stats/dashboard', {
-        headers: {
-          'Authorization': `Bearer ${localStorage.getItem('token')}`
-        }
-      });
-      if (response.ok) {
-        const data = await response.json();
-        setStats(data);
-      }
+      // Derive simple stats from available endpoints
+      const orders = await getOrders();
+      const totalOrders = orders.length;
+      const totalRevenue = orders.reduce((sum, o) => sum + (o.total || 0), 0);
+      const customersSet = new Set(
+        orders
+          .map(o => (o.customer && (o.customer.email || o.customer.username || o.customer.name)))
+          .filter(Boolean)
+      );
+      const totalCustomers = customersSet.size;
+      const averageOrderValue = totalOrders > 0 ? Math.round(totalRevenue / totalOrders) : 0;
+
+      setStats({ totalOrders, totalRevenue, totalCustomers, averageOrderValue });
     } catch (error) {
-      console.error('Error fetching stats:', error);
+      console.error('Error deriving stats:', error);
     }
   };
 
   const fetchRecentOrders = async () => {
     try {
-      const response = await fetch('http://localhost:8080/api/orders/recent', {
-        headers: {
-          'Authorization': `Bearer ${localStorage.getItem('token')}`
-        }
+      const orders = await getOrders();
+      // Sort by createdAt desc if present; fallback to id desc
+      const sorted = [...orders].sort((a, b) => {
+        const da = a.createdAt ? new Date(a.createdAt).getTime() : 0;
+        const db = b.createdAt ? new Date(b.createdAt).getTime() : 0;
+        if (db !== da) return db - da;
+        return (b.id || 0) - (a.id || 0);
       });
-      if (response.ok) {
-        const data = await response.json();
-        setRecentOrders(data);
-      }
+      setRecentOrders(sorted.slice(0, 5));
     } catch (error) {
       console.error('Error fetching recent orders:', error);
     }
@@ -46,17 +65,11 @@ export default function Dashboard() {
 
   const fetchTopProducts = async () => {
     try {
-      const response = await fetch('http://localhost:8080/api/products/top', {
-        headers: {
-          'Authorization': `Bearer ${localStorage.getItem('token')}`
-        }
-      });
-      if (response.ok) {
-        const data = await response.json();
-        setTopProducts(data);
-      }
+      // Backend doesn't expose top-products; show first few products as placeholder
+      const products = await getAllProducts();
+      setTopProducts(products.slice(0, 5).map(p => ({ ...p, soldCount: p.soldCount || 0 })));
     } catch (error) {
-      console.error('Error fetching top products:', error);
+      console.error('Error fetching products:', error);
     }
   };
 
@@ -78,6 +91,53 @@ export default function Dashboard() {
               <p className="text-gray-500 text-sm">Tổng đơn hàng</p>
               <h3 className="text-2xl font-bold">{stats.totalOrders}</h3>
             </div>
+      {/* Revenue Report Section */}
+      <div className="bg-white rounded-xl shadow-lg p-8 mt-10 flex flex-col items-center max-w-3xl mx-auto">
+        <div className="flex flex-col md:flex-row items-center justify-between w-full mb-6 gap-4">
+          <h2 className="text-2xl font-bold text-blue-700">Báo cáo doanh thu</h2>
+          <select value={revenueType} onChange={e => setRevenueType(e.target.value)} className="border border-blue-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-400">
+            <option value="day">Theo ngày</option>
+            <option value="week">Theo tuần</option>
+            <option value="month">Theo tháng</option>
+          </select>
+        </div>
+        <div className="mb-4 text-lg">Tổng doanh thu: <span className="font-extrabold text-green-600 text-2xl">{revenueData.total?.toLocaleString()}₫</span></div>
+        <div className="overflow-x-auto w-full mb-6">
+          <table className="min-w-full text-sm border border-gray-200 rounded-lg overflow-hidden">
+            <thead>
+              <tr className="bg-blue-50">
+                <th className="text-left p-3 font-semibold">{revenueType === 'day' ? 'Ngày' : revenueType === 'week' ? 'Tuần' : 'Tháng'}</th>
+                <th className="text-right p-3 font-semibold">Doanh thu</th>
+              </tr>
+            </thead>
+            <tbody>
+              {revenueData.labels.map((label, idx) => (
+                <tr key={label} className={idx % 2 ? 'bg-gray-50' : 'bg-white'}>
+                  <td className="p-3">{label}</td>
+                  <td className="p-3 text-right text-blue-700 font-bold">{revenueData.values[idx]?.toLocaleString()}₫</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+        {/* Bar chart - centered, spaced, rounded, soft color */}
+        <div className="w-full flex flex-col items-center">
+          <div className="flex items-end justify-center h-36 gap-2 w-full">
+            {revenueData.values.map((v, idx) => {
+              const max = Math.max(...revenueData.values, 1);
+              const height = Math.round((v / max) * 120);
+              return (
+                <div key={idx} className="bg-blue-300 rounded-t-lg transition-all duration-300" style={{height: `${height}px`, width: '24px'}} title={revenueData.labels[idx] + ': ' + v.toLocaleString() + '₫'}></div>
+              );
+            })}
+          </div>
+          <div className="flex justify-center text-xs mt-2 w-full gap-2">
+            {revenueData.labels.map((label, idx) => (
+              <span key={idx} className="w-24 text-center truncate">{label}</span>
+            ))}
+          </div>
+        </div>
+      </div>
             <Coffee className="w-8 h-8 text-blue-500" />
           </div>
         </div>
@@ -124,15 +184,15 @@ export default function Dashboard() {
               {recentOrders.map((order) => (
                 <div key={order.id} className="flex items-center justify-between">
                   <div>
-                    <p className="font-medium">Bàn {order.tableNumber}</p>
+                    <p className="font-medium">{order.table ? `Bàn ${order.table.tableNumber}` : 'Đơn hàng'}</p>
                     <p className="text-sm text-gray-500">
-                      {order.items?.length || 0} món - {order.total.toLocaleString()}đ
+                      {order.items?.length || 0} món - {(order.total || 0).toLocaleString()}đ
                     </p>
                   </div>
                   <div className="flex items-center text-gray-500">
                     <Clock className="w-4 h-4 mr-2" />
                     <span className="text-sm">
-                      {new Date(order.orderTime).toLocaleTimeString()}
+                      {new Date(order.createdAt || order.orderTime || Date.now()).toLocaleTimeString()}
                     </span>
                   </div>
                 </div>

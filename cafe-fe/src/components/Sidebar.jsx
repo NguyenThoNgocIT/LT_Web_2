@@ -2,7 +2,7 @@ import React from 'react';
 import { 
   Coffee,
   LayoutDashboard, 
-  Users, 
+  // Users, // Disabled for now
   Settings, 
   ChefHat,
   ClipboardList,
@@ -16,7 +16,7 @@ const Sidebar = ({ className }) => {
   const navigate = useNavigate();
   const menuItems = [
     { icon: LayoutDashboard, label: 'Dashboard', path: '/admin' },
-    { icon: Users, label: 'Quản lý người dùng', path: '/admin/users' },
+    // { icon: Users, label: 'Quản lý người dùng', path: '/admin/users' }, // Disabled: backend endpoint not yet available
     { icon: Coffee, label: 'Quản lý menu', path: '/admin/menu' },
     { icon: ChefHat, label: 'Quản lý bàn', path: '/admin/tables' },
     { icon: ClipboardList, label: 'Đơn đặt bàn', path: '/admin/orders' },

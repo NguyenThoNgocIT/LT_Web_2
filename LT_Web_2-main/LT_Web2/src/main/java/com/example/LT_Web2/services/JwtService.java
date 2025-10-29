@@ -13,11 +13,14 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.function.Function;
 import io.jsonwebtoken.Jwts;
+
 @Component
 public class JwtService {
 
-    public static final String SECRET = "5367566859703373367639792F423F452848284D6251655468576D5A71347437"; // Thay bằng key an toàn hơn
-    public static final long JWT_EXPIRATION = 1000 * 60 * 30; // 30 minutes
+    public static final String SECRET = "5367566859703373367639792F423F452848284D6251655468576D5A71347437"; // Thay bằng
+                                                                                                            // key an
+                                                                                                            // toàn hơn
+    public static final long JWT_EXPIRATION = 1000 * 60 * 60 * 8; // 8 hours (increased from 30 minutes)
 
     public String extractUsername(String token) {
         return extractClaim(token, Claims::getSubject);
@@ -43,10 +46,15 @@ public class JwtService {
 
     public String generateToken(UserDetails userDetails, Long userId) {
         Map<String, Object> claims = new HashMap<>();
-         claims.put("userId", userId);/// nhúng userid vào đây
+        claims.put("userId", userId);/// nhúng userid vào đây
         return createToken(claims, userDetails.getUsername());
     }
 
+    // Extract userId from token
+    public Long extractUserId(String token) {
+        final Claims claims = extractAllClaims(token);
+        return claims.get("userId", Long.class);
+    }
 
     private String createToken(Map<String, Object> claims, String subject) {
         return Jwts.builder()

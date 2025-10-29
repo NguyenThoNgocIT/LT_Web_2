@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { Button } from '../../components/ui/button';
 import { CalendarIcon, Clock, Users } from 'lucide-react';
 import { toast } from 'sonner';
-import { getAvailableTables, reserveTable } from '../../api/table.api';
+import { getAvailableTables, createReservation } from '../../api/table.api';
 
 export default function TableReservation() {
     const [availableTables, setAvailableTables] = useState([]);
@@ -36,12 +36,15 @@ export default function TableReservation() {
         }
 
         try {
+            // Backend expects: { tableId, reservationTime, note }
             const reservationData = {
-                ...reservationForm,
-                reservationTime: `${reservationForm.date}T${reservationForm.time}`
+                tableId: selectedTable.id,
+                reservationTime: `${reservationForm.date}T${reservationForm.time}:00`,
+                note: reservationForm.notes ? `${reservationForm.numberOfGuests} người - ${reservationForm.notes}` : `${reservationForm.numberOfGuests} người`
             };
             
-            await reserveTable(selectedTable.id, reservationData);
+            console.log('Creating reservation:', reservationData);
+            await createReservation(reservationData);
             toast.success('Đặt bàn thành công');
             fetchAvailableTables(); // Refresh list
             setSelectedTable(null);
@@ -53,7 +56,8 @@ export default function TableReservation() {
             });
         } catch (error) {
             console.error('Error reserving table:', error);
-            toast.error('Không thể đặt bàn: ' + (error.response?.data || 'Đã có lỗi xảy ra'));
+            const errorMsg = error.response?.data?.message || error.response?.data || error.message || 'Đã có lỗi xảy ra';
+            toast.error('Không thể đặt bàn: ' + errorMsg);
         }
     };
 

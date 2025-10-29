@@ -27,6 +27,70 @@ import java.util.List;
 @RequiredArgsConstructor
 @Transactional
 public class OrderServiceImpl implements OrderService {
+    @Override
+    public java.util.Map<String, Object> getRevenueStatistics(String type, java.time.LocalDate from,
+            java.time.LocalDate to) {
+        // Chuẩn hóa khoảng thời gian
+        java.util.Map<String, Object> result = new java.util.HashMap<>();
+        java.util.List<String> labels = new java.util.ArrayList<>();
+        java.util.List<java.math.BigDecimal> values = new java.util.ArrayList<>();
+        java.math.BigDecimal total = java.math.BigDecimal.ZERO;
+
+        java.util.List<Order> orders = orderRepository.findAll();
+        if (from != null && to != null) {
+            orders = orders.stream()
+                    .filter(o -> !o.getCreatedAt().toLocalDate().isBefore(from)
+                            && !o.getCreatedAt().toLocalDate().isAfter(to))
+                    .toList();
+        }
+
+        if ("day".equalsIgnoreCase(type)) {
+            // Thống kê từng ngày
+            java.util.Map<java.time.LocalDate, java.math.BigDecimal> map = new java.util.TreeMap<>();
+            for (Order o : orders) {
+                java.time.LocalDate d = o.getCreatedAt().toLocalDate();
+                map.put(d, map.getOrDefault(d, java.math.BigDecimal.ZERO).add(o.getTotalAmount()));
+            }
+            for (var entry : map.entrySet()) {
+                labels.add(entry.getKey().toString());
+                values.add(entry.getValue());
+                total = total.add(entry.getValue());
+            }
+        } else if ("week".equalsIgnoreCase(type)) {
+            // Thống kê theo tuần (ISO week)
+            java.util.Map<String, java.math.BigDecimal> map = new java.util.TreeMap<>();
+            for (Order o : orders) {
+                java.time.LocalDate d = o.getCreatedAt().toLocalDate();
+                java.time.temporal.WeekFields wf = java.time.temporal.WeekFields.ISO;
+                int week = d.get(wf.weekOfWeekBasedYear());
+                int year = d.getYear();
+                String key = year + "-W" + week;
+                map.put(key, map.getOrDefault(key, java.math.BigDecimal.ZERO).add(o.getTotalAmount()));
+            }
+            for (var entry : map.entrySet()) {
+                labels.add(entry.getKey());
+                values.add(entry.getValue());
+                total = total.add(entry.getValue());
+            }
+        } else if ("month".equalsIgnoreCase(type)) {
+            // Thống kê theo tháng
+            java.util.Map<String, java.math.BigDecimal> map = new java.util.TreeMap<>();
+            for (Order o : orders) {
+                java.time.LocalDate d = o.getCreatedAt().toLocalDate();
+                String key = d.getYear() + "-" + String.format("%02d", d.getMonthValue());
+                map.put(key, map.getOrDefault(key, java.math.BigDecimal.ZERO).add(o.getTotalAmount()));
+            }
+            for (var entry : map.entrySet()) {
+                labels.add(entry.getKey());
+                values.add(entry.getValue());
+                total = total.add(entry.getValue());
+            }
+        }
+        result.put("labels", labels);
+        result.put("values", values);
+        result.put("total", total);
+        return result;
+    }
 
     private final OrderRepository orderRepository;
     private final OrderItemRepository orderItemRepository;
@@ -35,22 +99,30 @@ public class OrderServiceImpl implements OrderService {
     private final UserService userService;
 
     public Order createOrder(OrderRequest request, Long customerId) {
-        // 1. Load table
-        Tables table = tableService.findById(request.getTableId());
+        Order order = new Order();
 
-        // 2. Kiểm tra trạng thái bàn: phải là OCCUPIED hoặc RESERVED
-        if (table.getStatus() != TableStatus.OCCUPIED && table.getStatus() != TableStatus.RESERVED) {
-            throw new BusinessException("Chỉ có thể tạo đơn hàng cho bàn đang sử dụng");
+        // 1. Xử lý table (nếu có)
+        if (request.getTableId() != null) {
+            // Case 1: Đơn hàng tại bàn (khách ngồi tại quán)
+            Tables table = tableService.findById(request.getTableId());
+
+            // Kiểm tra trạng thái bàn: phải là OCCUPIED hoặc RESERVED
+            if (table.getStatus() != TableStatus.OCCUPIED && table.getStatus() != TableStatus.RESERVED) {
+                throw new BusinessException("Chỉ có thể tạo đơn hàng cho bàn đang sử dụng hoặc đã đặt");
+            }
+            order.setTable(table);
+            System.out.println("✅ [Order] Tạo đơn cho bàn #" + table.getId() + " - " + table.getName());
+        } else {
+            // Case 2: Đơn hàng mang đi/giao hàng (khách vãng lai, không có bàn)
+            System.out.println("✅ [Order] Tạo đơn mang đi (không có bàn)");
         }
 
-        // 3. Tạo đơn hàng
-        Order order = new Order();
-        order.setTable(table);
-        order.setCustomer(userService.getUserById(customerId)); // ← cần inject userService
+        // 2. Tạo đơn hàng
+        order.setCustomer(userService.getUserById(customerId));
         order.setStatus(OrderStatus.PENDING);
         order.setCreatedAt(LocalDateTime.now());
 
-        // 4. Tính tổng & lưu item
+        // 3. Tính tổng & lưu item
         BigDecimal total = BigDecimal.ZERO;
         List<OrderItem> items = new ArrayList<>();
         for (OrderRequest.OrderItemRequest itemReq : request.getItems()) {
@@ -74,6 +146,7 @@ public class OrderServiceImpl implements OrderService {
             orderItemRepository.save(item);
         }
 
+        System.out.println("✅ [Order] Đơn hàng #" + savedOrder.getId() + " đã tạo thành công. Tổng: " + total);
         return savedOrder;
     }
 
@@ -81,7 +154,6 @@ public class OrderServiceImpl implements OrderService {
     public List<OrderItem> getOrderItems(Long orderId) {
         return orderItemRepository.findByOrderId(orderId);
     }
-
 
     @Override
     public OrderResponse getOrderDetail(Long id) {

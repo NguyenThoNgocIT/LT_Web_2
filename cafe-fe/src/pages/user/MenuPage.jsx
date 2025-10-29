@@ -9,7 +9,11 @@ import { createOrder } from '../../api/order.api';
 const MenuPage = () => {
     const [products, setProducts] = useState([]);
     const [selectedCategory, setSelectedCategory] = useState('ALL');
-    const [cart, setCart] = useState([]);
+    // Load cart from localStorage on mount
+    const [cart, setCart] = useState(() => {
+        const savedCart = localStorage.getItem('cart');
+        return savedCart ? JSON.parse(savedCart) : [];
+    });
     const [deliveryTime, setDeliveryTime] = useState('ASAP');
     const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -18,6 +22,11 @@ const MenuPage = () => {
         { id: 'TEA', name: 'TRÀ', icon: Wine },
         { id: 'CAKE', name: 'BÁNH NGỌT', icon: Soup },
     ];
+
+    // Save cart to localStorage whenever it changes
+    useEffect(() => {
+        localStorage.setItem('cart', JSON.stringify(cart));
+    }, [cart]);
 
     useEffect(() => {
         fetchProducts();
@@ -254,6 +263,7 @@ const MenuPage = () => {
                                             console.debug('Order created:', res);
                                             toast.success('Đặt hàng thành công');
                                             setCart([]);
+                                            localStorage.removeItem('cart'); // Clear cart from localStorage
                                         } catch (e) {
                                             console.error('Order error:', e);
                                             const serverMsg = e?.response?.data?.message || e?.response?.data || e?.message || 'Lỗi kết nối tới server';
