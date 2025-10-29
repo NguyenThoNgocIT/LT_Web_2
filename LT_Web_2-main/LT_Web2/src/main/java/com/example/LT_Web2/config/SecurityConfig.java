@@ -1,6 +1,9 @@
 package com.example.LT_Web2.config;
 
 import com.example.LT_Web2.repository.UserRepository;
+import org.springframework.beans.factory.annotation.Value;
+import java.util.Arrays;
+import java.util.stream.Collectors;
 import jakarta.servlet.http.HttpServletResponse;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
@@ -68,44 +71,40 @@ public class SecurityConfig {
                         .requestMatchers("/api/auth/**").permitAll()
                         .requestMatchers("/api/user/**").hasAnyRole("USER", "ADMIN", "ROOT")
                         .requestMatchers("/api/admin/**").hasAnyRole("ADMIN", "ROOT")
-                        .anyRequest().authenticated()
-                )
+                        .anyRequest().authenticated())
                 .exceptionHandling(ex -> ex
                         .authenticationEntryPoint((request, response, authException) -> {
                             response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
                             response.setContentType("application/json; charset=utf-8");
                             response.setCharacterEncoding("utf-8");
                             response.getWriter().write("""
-                        {
-                          "timestamp": "%s",
-                          "status": 401,
-                          "error": "Unauthorized",
-                          "message": "Token không hợp lệ hoặc chưa cung cấp token",
-                          "path": "%s"
-                        }
-                        """.formatted(
+                                    {
+                                      "timestamp": "%s",
+                                      "status": 401,
+                                      "error": "Unauthorized",
+                                      "message": "Token không hợp lệ hoặc chưa cung cấp token",
+                                      "path": "%s"
+                                    }
+                                    """.formatted(
                                     java.time.Instant.now(),
-                                    request.getRequestURI()
-                            ));
+                                    request.getRequestURI()));
                         })
                         .accessDeniedHandler((request, response, accessDeniedException) -> {
                             response.setStatus(HttpServletResponse.SC_FORBIDDEN);
                             response.setContentType("application/json; charset=utf-8");
                             response.setCharacterEncoding("utf-8");
                             response.getWriter().write("""
-                        {
-                          "timestamp": "%s",
-                          "status": 403,
-                          "error": "Forbidden",
-                          "message": "Bạn không có quyền truy cập tài nguyên này",
-                          "path": "%s"
-                        }
-                        """.formatted(
+                                    {
+                                      "timestamp": "%s",
+                                      "status": 403,
+                                      "error": "Forbidden",
+                                      "message": "Bạn không có quyền truy cập tài nguyên này",
+                                      "path": "%s"
+                                    }
+                                    """.formatted(
                                     java.time.Instant.now(),
-                                    request.getRequestURI()
-                            ));
-                        })
-                )
+                                    request.getRequestURI()));
+                        }))
                 .addFilterBefore(jwtAuthFilter, UsernamePasswordAuthenticationFilter.class);
 
         return http.build();
@@ -114,9 +113,18 @@ public class SecurityConfig {
     @Bean
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration config = new CorsConfiguration();
-        // Cho phép origin cho cả localhost:3000 (FE cũ) và localhost:3001 (FE hiện tại).
-        // Trong dev có thể mở rộng hoặc dùng allowedOriginPatterns để cho phép nhiều cổng.
-        config.setAllowedOrigins(List.of("http://localhost:3000", "http://localhost:3001"));
+        // Lấy danh sách origin từ application.properties
+        // (spring.web.cors.allowed-origins)
+        // Nếu không có, mặc định cho phép các origin dev thông dụng (3000, 3001, 5173 -
+        // Vite)
+        String allowed = this.allowedOrigins == null
+                ? "http://localhost:3000,http://localhost:3001,http://localhost:5173"
+                : this.allowedOrigins;
+        // Dùng allowedOriginPatterns để hỗ trợ wildcard/patterns (ví dụ
+        // http://localhost:*)
+        config.setAllowedOriginPatterns(Arrays.stream(allowed.split(","))
+                .map(String::trim)
+                .collect(Collectors.toList()));
         config.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "OPTIONS"));
         config.setAllowedHeaders(List.of("*"));
         // Cho phép gửi cookie/authorization header nếu FE gửi credentials
@@ -127,4 +135,8 @@ public class SecurityConfig {
         source.registerCorsConfiguration("/api/**", config);
         return source;
     }
+
+    // Đọc property từ application.properties: spring.web.cors.allowed-origins
+    @Value("${spring.web.cors.allowed-origins:}")
+    private String allowedOrigins;
 }
