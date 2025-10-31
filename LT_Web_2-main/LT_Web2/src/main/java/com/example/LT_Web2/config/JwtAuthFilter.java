@@ -37,33 +37,33 @@ public class JwtAuthFilter extends OncePerRequestFilter {
         String jwt = null;
         String username = null;
 
-        System.out.println("🔍 [JWT Filter] " + request.getMethod() + " " + request.getRequestURI());
-        System.out.println("🔍 [JWT Filter] Authorization header: "
+        System.out.println(" [JWT Filter] " + request.getMethod() + " " + request.getRequestURI());
+        System.out.println(" [JWT Filter] Authorization header: "
                 + (authHeader != null ? authHeader.substring(0, Math.min(30, authHeader.length())) + "..." : "NULL"));
 
         if (authHeader != null && authHeader.startsWith("Bearer ")) {
             jwt = authHeader.substring(7);
             try {
                 username = jwtService.extractUsername(jwt);
-                System.out.println("✅ [JWT Filter] Extracted username: " + username);
+                System.out.println(" [JWT Filter] Extracted username: " + username);
             } catch (Exception e) {
-                System.err.println("❌ [JWT Filter] Error extracting username from JWT: " + e.getMessage());
+                System.err.println(" [JWT Filter] Error extracting username from JWT: " + e.getMessage());
                 e.printStackTrace();
             }
         } else {
-            System.err.println("⚠️ [JWT Filter] No valid Authorization header");
+            System.err.println(" [JWT Filter] No valid Authorization header");
         }
 
         // Nếu có username và chưa xác thực
         if (username != null && SecurityContextHolder.getContext().getAuthentication() == null) {
             try {
                 UserDetails userDetails = this.userDetailsService.loadUserByUsername(username);
-                System.out.println("🔍 [JWT Filter] Loaded user: " + username);
-                System.out.println("🔍 [JWT Filter] User authorities: " + userDetails.getAuthorities());
+                System.out.println("[JWT Filter] Loaded user: " + username);
+                System.out.println(" [JWT Filter] User authorities: " + userDetails.getAuthorities());
 
-                // ✅ Kiểm tra token hợp lệ
+                //  Kiểm tra token hợp lệ
                 if (jwtService.validateToken(jwt, userDetails)) {
-                    // ✅ Tạo authentication token
+                    // Tạo authentication token
                     UsernamePasswordAuthenticationToken authToken = new UsernamePasswordAuthenticationToken(
                             userDetails,
                             null,
@@ -71,19 +71,19 @@ public class JwtAuthFilter extends OncePerRequestFilter {
                     authToken.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
                     SecurityContextHolder.getContext().setAuthentication(authToken);
                     System.out.println(
-                            "✅ [JWT Filter] JWT authenticated user: " + username + " with roles: "
+                            " [JWT Filter] JWT authenticated user: " + username + " with roles: "
                                     + userDetails.getAuthorities());
                 } else {
-                    System.err.println("❌ [JWT Filter] JWT token invalid for user: " + username);
+                    System.err.println(" [JWT Filter] JWT token invalid for user: " + username);
                 }
             } catch (Exception e) {
-                System.err.println("❌ [JWT Filter] Error during JWT authentication: " + e.getMessage());
+                System.err.println(" [JWT Filter] Error during JWT authentication: " + e.getMessage());
                 e.printStackTrace();
             }
         } else if (username == null) {
-            System.err.println("⚠️ [JWT Filter] Username is null, skipping authentication");
+            System.err.println(" [JWT Filter] Username is null, skipping authentication");
         } else {
-            System.out.println("ℹ️ [JWT Filter] User already authenticated: "
+            System.out.println(" [JWT Filter] User already authenticated: "
                     + SecurityContextHolder.getContext().getAuthentication().getName());
         }
 

@@ -28,7 +28,7 @@ public class UserReservationController {
     @PostMapping
     public ResponseEntity<ReservationResponse> createReservation(@Valid @RequestBody ReservationRequest request,
             HttpServletRequest httpRequest) {
-        System.out.println("📥 [ReservationController] POST /api/user/reservations");
+        System.out.println(" [ReservationController] POST /api/user/reservations");
         System.out.println("   Request body: tableId=" + request.getTableId() +
                 ", time=" + request.getReservationTime() +
                 ", note=" + request.getNote());
@@ -37,7 +37,7 @@ public class UserReservationController {
         System.out.println("   User ID: " + userId);
 
         Reservation reservation = reservationService.createReservation(request, userId);
-        System.out.println("✅ [ReservationController] Reservation created: #" + reservation.getId());
+        System.out.println(" [ReservationController] Reservation created: #" + reservation.getId());
         return ResponseEntity.ok(new ReservationResponse(reservation));
     }
 
@@ -65,11 +65,11 @@ public class UserReservationController {
             try {
                 Long userId = jwtService.extractUserId(token);
                 if (userId != null) {
-                    System.out.println("✅ [Reservation] Extracted userId from JWT: " + userId);
+                    System.out.println(" [Reservation] Extracted userId from JWT: " + userId);
                     return userId;
                 }
             } catch (Exception e) {
-                System.err.println("⚠️ [Reservation] Cannot extract userId from JWT: " + e.getMessage());
+                System.err.println(" [Reservation] Cannot extract userId from JWT: " + e.getMessage());
             }
         }
 
@@ -77,12 +77,12 @@ public class UserReservationController {
         var auth = SecurityContextHolder.getContext().getAuthentication();
         if (auth != null && auth.getPrincipal() instanceof User) {
             User user = (User) auth.getPrincipal();
-            System.out.println("✅ [Reservation] Got userId from SecurityContext: " + user.getId());
+            System.out.println(" [Reservation] Got userId from SecurityContext: " + user.getId());
             return user.getId();
         }
 
         // Log chi tiết để debug
-        System.err.println("❌ [Reservation] Cannot get user ID. Auth: " + auth);
+        System.err.println(" [Reservation] Cannot get user ID. Auth: " + auth);
         if (auth != null) {
             System.err.println("Principal type: " + auth.getPrincipal().getClass().getName());
         }

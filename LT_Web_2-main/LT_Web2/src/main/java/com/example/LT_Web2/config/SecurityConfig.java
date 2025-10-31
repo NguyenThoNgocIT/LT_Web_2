@@ -60,7 +60,7 @@ public class SecurityConfig {
         return provider;
     }
 
-    // ✅ SỬA Ở ĐÂY: JwtAuthFilter là tham số, KHÔNG phải field
+    //  SỬA Ở ĐÂY: JwtAuthFilter là tham số, KHÔNG phải field
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http, JwtAuthFilter jwtAuthFilter) throws Exception {
         http

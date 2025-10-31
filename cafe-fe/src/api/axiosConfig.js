@@ -11,7 +11,7 @@ const api = axios.create({
 api.interceptors.request.use(
     (config) => {
         const token = localStorage.getItem('token');
-        console.log('📤 API Request:', {
+        console.log(' API Request:', {
             url: config.url,
             method: config.method,
             hasToken: !!token,
@@ -30,7 +30,7 @@ api.interceptors.request.use(
 // Add a response interceptor
 api.interceptors.response.use(
     (response) => {
-        console.log('✅ API Success:', {
+        console.log(' API Success:', {
             url: response.config?.url,
             status: response.status
         });
@@ -39,7 +39,7 @@ api.interceptors.response.use(
     (error) => {
         if (error.response?.status === 401) {
             // Log detailed error for debugging
-            console.error('🔴 401 Unauthorized:', {
+            console.error(' 401 Unauthorized:', {
                 url: error.config?.url,
                 method: error.config?.method,
                 data: error.config?.data,
@@ -54,8 +54,8 @@ api.interceptors.response.use(
             
             if (hasToken) {
                 // Token exists but 401 - token might be invalid or expired
-                console.warn('⚠️ Token exists but got 401 - token might be expired');
-                console.warn('⚠️ Clearing auth...');
+                console.warn(' Token exists but got 401 - token might be expired');
+                console.warn(' Clearing auth...');
                 localStorage.removeItem('token');
                 localStorage.removeItem('user');
                 
@@ -68,18 +68,18 @@ api.interceptors.response.use(
                                    error.response?.data?.error?.toLowerCase().includes('unauthorized');
                 
                 if (!isOnLoginPage && (isOnAdminPage || isAuthError)) {
-                    console.warn('🔄 Will redirect to login in 1.5s...');
+                    console.warn('Will redirect to login in 1.5s...');
                     setTimeout(() => {
                         window.location.href = '/login';
                     }, 1500);
                 } else {
-                    console.warn('⚠️ Got 401 but not redirecting (user page + not auth error)');
+                    console.warn(' Got 401 but not redirecting (user page + not auth error)');
                     // Show toast to user
-                    console.warn('💡 User should re-login manually');
+                    console.warn(' User should re-login manually');
                 }
             } else {
                 // No token - already cleared, just log
-                console.warn('⚠️ Got 401 but token already cleared');
+                console.warn(' Got 401 but token already cleared');
             }
         }
         return Promise.reject(error);

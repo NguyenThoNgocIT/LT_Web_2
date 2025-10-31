@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Plus, Users, Coffee, Clock, Grid3x3, List, MapPin, CheckCircle, XCircle } from 'lucide-react';
+import { Plus, Users, Grid3x3, List, MapPin } from 'lucide-react';
 import { Button } from '../../components/ui/button';
 import { getAllTables, createTable, updateTableStatus } from '../../api/table.api';
 import { toast } from 'sonner';

@@ -80,11 +80,11 @@ public class UserOrderController {
             try {
                 Long userId = jwtService.extractUserId(token);
                 if (userId != null) {
-                    System.out.println("✅ Extracted userId from JWT: " + userId);
+                    System.out.println(" Extracted userId from JWT: " + userId);
                     return userId;
                 }
             } catch (Exception e) {
-                System.err.println("⚠️ Cannot extract userId from JWT: " + e.getMessage());
+                System.err.println(" Cannot extract userId from JWT: " + e.getMessage());
             }
         }
 
@@ -92,12 +92,12 @@ public class UserOrderController {
         var auth = SecurityContextHolder.getContext().getAuthentication();
         if (auth != null && auth.getPrincipal() instanceof User) {
             User user = (User) auth.getPrincipal();
-            System.out.println("✅ Got userId from SecurityContext: " + user.getId());
+            System.out.println(" Got userId from SecurityContext: " + user.getId());
             return user.getId();
         }
 
         // Log chi tiết để debug
-        System.err.println("❌ Cannot get user ID. Auth: " + auth);
+        System.err.println(" Cannot get user ID. Auth: " + auth);
         if (auth != null) {
             System.err.println("Principal type: " + auth.getPrincipal().getClass().getName());
             System.err.println("Principal: " + auth.getPrincipal());

@@ -112,7 +112,7 @@ public class OrderServiceImpl implements OrderService {
                 throw new BusinessException("Chỉ có thể tạo đơn hàng cho bàn đang sử dụng hoặc đã đặt");
             }
             order.setTable(table);
-            System.out.println("✅ [Order] Tạo đơn cho bàn #" + table.getId() + " - " + table.getName());
+            System.out.println(" [Order] Tạo đơn cho bàn #" + table.getId() + " - " + table.getName());
         } else {
             // Case 2: Kiểm tra xem user có reservation đang hoạt động không
             List<com.example.LT_Web2.entity.Reservation> activeReservations = reservationRepository
@@ -130,11 +130,11 @@ public class OrderServiceImpl implements OrderService {
                     tableService.save(reservedTable);
                 }
 
-                System.out.println("✅ [Order] User có reservation -> Tạo đơn cho bàn #" + reservedTable.getId() + " - "
+                System.out.println(" [Order] User có reservation -> Tạo đơn cho bàn #" + reservedTable.getId() + " - "
                         + reservedTable.getName());
             } else {
                 // Case 3: Đơn hàng mang đi/giao hàng (khách vãng lai, không có bàn)
-                System.out.println("✅ [Order] Tạo đơn mang đi (không có bàn)");
+                System.out.println(" [Order] Tạo đơn mang đi (không có bàn)");
             }
         }
 
@@ -167,7 +167,7 @@ public class OrderServiceImpl implements OrderService {
             orderItemRepository.save(item);
         }
 
-        System.out.println("✅ [Order] Đơn hàng #" + savedOrder.getId() + " đã tạo thành công. Tổng: " + total);
+        System.out.println(" [Order] Đơn hàng #" + savedOrder.getId() + " đã tạo thành công. Tổng: " + total);
         return savedOrder;
     }
 
