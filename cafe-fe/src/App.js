@@ -12,6 +12,8 @@ import Dashboard from './pages/admin/Dashboard';
 import MenuPage from './pages/user/MenuPage';
 import BookingPage from './pages/user/BookingPage';
 import DebugAuth from './pages/admin/DebugAuth';
+import ReservationHistory from './pages/user/ReservationHistory';
+import OrderHistory from './pages/user/OrderHistory';
 
 function App() {
   // Protected Route component
@@ -137,20 +139,20 @@ function App() {
             <BookingPage />
           </UserLayout>
         } />
-         <Route path="/user/reservations" element={
-           <ProtectedRoute requireAdmin={false}>
-             <UserLayout>
-               {require('./pages/user/ReservationHistory.jsx').default()}
-             </UserLayout>
-           </ProtectedRoute>
-         } />
-         <Route path="/user/orders" element={
-           <ProtectedRoute requireAdmin={false}>
-             <UserLayout>
-               {require('./pages/user/OrderHistory.jsx').default()}
-             </UserLayout>
-           </ProtectedRoute>
-         } />
+        <Route path="/user/reservations" element={
+          <ProtectedRoute requireAdmin={false}>
+            <UserLayout>
+              <ReservationHistory />
+            </UserLayout>
+          </ProtectedRoute>
+        } />
+        <Route path="/user/orders" element={
+          <ProtectedRoute requireAdmin={false}>
+            <UserLayout>
+              <OrderHistory />
+            </UserLayout>
+          </ProtectedRoute>
+        } />
       </Routes>
     </Router>
   );

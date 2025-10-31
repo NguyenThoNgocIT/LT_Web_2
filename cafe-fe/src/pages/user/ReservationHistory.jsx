@@ -7,20 +7,33 @@ export default function ReservationHistory() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    fetchReservations();
-  }, []);
+    let isMounted = true;
+    
+    const fetchReservations = async () => {
+      setLoading(true);
+      try {
+        const data = await getMyReservations();
+        if (isMounted) {
+          setReservations(data);
+        }
+      } catch (error) {
+        if (isMounted) {
+          console.error('Error fetching reservations:', error);
+          toast.error('Không thể tải lịch sử đặt bàn');
+        }
+      } finally {
+        if (isMounted) {
+          setLoading(false);
+        }
+      }
+    };
 
-  const fetchReservations = async () => {
-    setLoading(true);
-    try {
-      const data = await getMyReservations();
-      setReservations(data);
-    } catch (error) {
-      toast.error('Không thể tải lịch sử đặt bàn');
-    } finally {
-      setLoading(false);
-    }
-  };
+    fetchReservations();
+
+    return () => {
+      isMounted = false;
+    };
+  }, []);
 
   return (
     <div className="min-h-screen bg-[#fcf7f2] p-6">
@@ -44,9 +57,9 @@ export default function ReservationHistory() {
               <tbody>
                 {reservations.map(rsv => (
                   <tr key={rsv.id} className="border-t">
-                    <td className="p-2">{rsv.table?.tableNumber || '-'}</td>
+                    <td className="p-2">{rsv.table?.name || '-'}</td>
                     <td className="p-2">{rsv.reservationTime ? new Date(rsv.reservationTime).toLocaleString() : '-'}</td>
-                    <td className="p-2">{rsv.note}</td>
+                    <td className="p-2">{rsv.note || '-'}</td>
                     <td className="p-2">{rsv.status}</td>
                   </tr>
                 ))}

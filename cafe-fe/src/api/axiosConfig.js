@@ -45,21 +45,41 @@ api.interceptors.response.use(
                 data: error.config?.data,
                 headers: error.config?.headers,
                 response: error.response?.data,
-                hasToken: !!localStorage.getItem('token')
+                hasToken: !!localStorage.getItem('token'),
+                currentPath: window.location.pathname
             });
             
-            // Only redirect to login if it's an auth-related endpoint or token is truly invalid
-            // Don't auto-redirect for other 401s that might be permission issues
-            const authEndpoints = ['/auth/login', '/auth/register', '/user/profile'];
-            const isAuthEndpoint = authEndpoints.some(endpoint => error.config?.url?.includes(endpoint));
+            // Check if token exists - if not, likely already logged out
+            const hasToken = !!localStorage.getItem('token');
             
-            if (isAuthEndpoint || error.response?.data?.message?.includes('Token')) {
-                console.warn('⚠️ Clearing auth and redirecting to login');
+            if (hasToken) {
+                // Token exists but 401 - token might be invalid or expired
+                console.warn('⚠️ Token exists but got 401 - token might be expired');
+                console.warn('⚠️ Clearing auth...');
                 localStorage.removeItem('token');
                 localStorage.removeItem('user');
-                window.location.href = '/login';
+                
+                // Only redirect to login if:
+                // 1. Not already on login page
+                // 2. AND (on admin page OR explicit auth error)
+                const isOnLoginPage = window.location.pathname.includes('/login');
+                const isOnAdminPage = window.location.pathname.includes('/admin');
+                const isAuthError = error.response?.data?.message?.toLowerCase().includes('token') || 
+                                   error.response?.data?.error?.toLowerCase().includes('unauthorized');
+                
+                if (!isOnLoginPage && (isOnAdminPage || isAuthError)) {
+                    console.warn('🔄 Will redirect to login in 1.5s...');
+                    setTimeout(() => {
+                        window.location.href = '/login';
+                    }, 1500);
+                } else {
+                    console.warn('⚠️ Got 401 but not redirecting (user page + not auth error)');
+                    // Show toast to user
+                    console.warn('💡 User should re-login manually');
+                }
             } else {
-                console.warn('⚠️ 401 error but not auto-redirecting - might be permission issue');
+                // No token - already cleared, just log
+                console.warn('⚠️ Got 401 but token already cleared');
             }
         }
         return Promise.reject(error);

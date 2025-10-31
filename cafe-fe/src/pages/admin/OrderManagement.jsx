@@ -24,14 +24,17 @@ export default function OrderManagement() {
   useEffect(() => { fetchOrders(); }, []);
 
   const handleStatusChange = async (orderId, newStatus) => {
+    console.log('🔄 Updating order status:', { orderId, newStatus });
     try {
-      await updateOrderStatus(orderId, newStatus);
+      const result = await updateOrderStatus(orderId, newStatus);
+      console.log('✅ Status update result:', result);
       toast.success('Cập nhật trạng thái thành công');
       fetchOrders();
     } catch (error) {
-      console.error('Error updating order status:', error);
+      console.error('❌ Error updating order status:', error);
+      console.error('Error response:', error.response);
       const errorMsg = error.response?.data?.message || error.response?.data || 'Không thể cập nhật trạng thái';
-      toast.error(errorMsg);
+      toast.error('Lỗi: ' + errorMsg);
     }
   };
 

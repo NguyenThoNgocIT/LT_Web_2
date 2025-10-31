@@ -97,13 +97,14 @@ public class OrderServiceImpl implements OrderService {
     private final TableService tableService;
     private final ProductService productService;
     private final UserService userService;
+    private final com.example.LT_Web2.repository.ReservationRepository reservationRepository;
 
     public Order createOrder(OrderRequest request, Long customerId) {
         Order order = new Order();
 
-        // 1. Xử lý table (nếu có)
+        // 1. Xử lý table (nếu có hoặc tự động từ reservation)
         if (request.getTableId() != null) {
-            // Case 1: Đơn hàng tại bàn (khách ngồi tại quán)
+            // Case 1: Đơn hàng tại bàn (khách ngồi tại quán) - đã chỉ định bàn
             Tables table = tableService.findById(request.getTableId());
 
             // Kiểm tra trạng thái bàn: phải là OCCUPIED hoặc RESERVED
@@ -113,8 +114,28 @@ public class OrderServiceImpl implements OrderService {
             order.setTable(table);
             System.out.println("✅ [Order] Tạo đơn cho bàn #" + table.getId() + " - " + table.getName());
         } else {
-            // Case 2: Đơn hàng mang đi/giao hàng (khách vãng lai, không có bàn)
-            System.out.println("✅ [Order] Tạo đơn mang đi (không có bàn)");
+            // Case 2: Kiểm tra xem user có reservation đang hoạt động không
+            List<com.example.LT_Web2.entity.Reservation> activeReservations = reservationRepository
+                    .findActiveReservationsByCustomer(customerId);
+
+            if (!activeReservations.isEmpty()) {
+                // User có reservation -> gán bàn từ reservation đầu tiên
+                com.example.LT_Web2.entity.Reservation reservation = activeReservations.get(0);
+                Tables reservedTable = reservation.getTable();
+                order.setTable(reservedTable);
+
+                // Cập nhật trạng thái bàn thành OCCUPIED nếu đang RESERVED
+                if (reservedTable.getStatus() == TableStatus.RESERVED) {
+                    reservedTable.setStatus(TableStatus.OCCUPIED);
+                    tableService.save(reservedTable);
+                }
+
+                System.out.println("✅ [Order] User có reservation -> Tạo đơn cho bàn #" + reservedTable.getId() + " - "
+                        + reservedTable.getName());
+            } else {
+                // Case 3: Đơn hàng mang đi/giao hàng (khách vãng lai, không có bàn)
+                System.out.println("✅ [Order] Tạo đơn mang đi (không có bàn)");
+            }
         }
 
         // 2. Tạo đơn hàng

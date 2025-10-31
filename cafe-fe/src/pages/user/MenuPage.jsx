@@ -260,12 +260,13 @@ const MenuPage = () => {
                                         setIsSubmitting(true);
                                         try {
                                             const res = await createOrder(payload);
-                                            console.debug('Order created:', res);
+                                            console.debug('✅ Order created successfully:', res);
                                             toast.success('Đặt hàng thành công');
                                             setCart([]);
                                             localStorage.removeItem('cart'); // Clear cart from localStorage
                                         } catch (e) {
-                                            console.error('Order error:', e);
+                                            console.error('❌ Order error:', e);
+                                            console.error('Error response:', e?.response);
                                             const serverMsg = e?.response?.data?.message || e?.response?.data || e?.message || 'Lỗi kết nối tới server';
                                             toast.error('Lỗi đặt hàng: ' + serverMsg);
                                         } finally {

@@ -7,20 +7,33 @@ export default function OrderHistory() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    fetchOrders();
-  }, []);
+    let isMounted = true;
+    
+    const fetchOrders = async () => {
+      setLoading(true);
+      try {
+        const data = await getMyOrders();
+        if (isMounted) {
+          setOrders(data);
+        }
+      } catch (error) {
+        if (isMounted) {
+          console.error('Error fetching orders:', error);
+          toast.error('Không thể tải lịch sử đơn hàng');
+        }
+      } finally {
+        if (isMounted) {
+          setLoading(false);
+        }
+      }
+    };
 
-  const fetchOrders = async () => {
-    setLoading(true);
-    try {
-      const data = await getMyOrders();
-      setOrders(data);
-    } catch (error) {
-      toast.error('Không thể tải lịch sử đơn hàng');
-    } finally {
-      setLoading(false);
-    }
-  };
+    fetchOrders();
+
+    return () => {
+      isMounted = false;
+    };
+  }, []);
 
   return (
     <div className="min-h-screen bg-[#fcf7f2] p-6">
@@ -46,7 +59,7 @@ export default function OrderHistory() {
                   <tr key={order.id} className="border-t">
                     <td className="p-2">{order.id}</td>
                     <td className="p-2">{order.createdAt ? new Date(order.createdAt).toLocaleString() : '-'}</td>
-                    <td className="p-2">{order.total ? order.total.toLocaleString() + '₫' : '-'}</td>
+                    <td className="p-2">{order.totalAmount ? order.totalAmount.toLocaleString() + '₫' : '-'}</td>
                     <td className="p-2">{order.status}</td>
                   </tr>
                 ))}
