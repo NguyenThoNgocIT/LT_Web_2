@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo } from 'react';
-import { Clock, Coffee, Tag, Search } from 'lucide-react';
+import {  Search } from 'lucide-react';
 import { Button } from '../../components/ui/button';
 import { getOrders, updateOrderStatus } from '../../api/order.api';
 import { toast } from 'sonner';
@@ -52,7 +52,65 @@ export default function OrderManagement() {
   const totalPages = Math.max(1, Math.ceil(filtered.length / pageSize));
   const pageData = filtered.slice((page - 1) * pageSize, page * pageSize);
 
-  const statusOptions = ['ALL', 'PENDING', 'CONFIRMED', 'PREPARING', 'SERVED', 'COMPLETED', 'CANCELLED'];
+  const statusOptions = ['ALL', 'PENDING', 'PREPARING', 'SERVED', 'COMPLETED', 'CANCELLED'];
+
+  const getStatusColor = (status) => {
+    switch (status) {
+      case 'PENDING':
+        return 'bg-yellow-100 text-yellow-800';
+      case 'PREPARING':
+        return 'bg-blue-100 text-blue-800';
+      case 'SERVED':
+        return 'bg-purple-100 text-purple-800';
+      case 'COMPLETED':
+        return 'bg-green-100 text-green-800';
+      case 'CANCELLED':
+        return 'bg-red-100 text-red-800';
+      default:
+        return 'bg-gray-100 text-gray-800';
+    }
+  };
+
+  const getStatusText = (status) => {
+    switch (status) {
+      case 'PENDING':
+        return 'Chờ xử lý';
+      case 'PREPARING':
+        return 'Đang chế biến';
+      case 'SERVED':
+        return 'Đã phục vụ';
+      case 'COMPLETED':
+        return 'Hoàn thành';
+      case 'CANCELLED':
+        return 'Đã hủy';
+      default:
+        return status;
+    }
+  };
+
+  const getAvailableActions = (currentStatus) => {
+    switch (currentStatus) {
+      case 'PENDING':
+        return [
+          { status: 'PREPARING', label: 'Bắt đầu chế biến', color: 'bg-blue-600 hover:bg-blue-700' },
+          { status: 'CANCELLED', label: 'Hủy', color: 'bg-red-600 hover:bg-red-700' }
+        ];
+      case 'PREPARING':
+        return [
+          { status: 'SERVED', label: 'Đã phục vụ', color: 'bg-purple-600 hover:bg-purple-700' },
+          { status: 'CANCELLED', label: 'Hủy', color: 'bg-red-600 hover:bg-red-700' }
+        ];
+      case 'SERVED':
+        return [
+          { status: 'COMPLETED', label: 'Hoàn thành', color: 'bg-green-600 hover:bg-green-700' }
+        ];
+      case 'COMPLETED':
+      case 'CANCELLED':
+        return [];
+      default:
+        return [];
+    }
+  };
 
   return (
     <div className="p-6">
@@ -71,7 +129,7 @@ export default function OrderManagement() {
           </div>
 
           <select className="border rounded-lg p-2" value={statusFilter} onChange={(e) => { setStatusFilter(e.target.value); setPage(1); }}>
-            {statusOptions.map(s => <option key={s} value={s}>{s === 'ALL' ? 'Tất cả' : s}</option>)}
+            {statusOptions.map(s => <option key={s} value={s}>{s === 'ALL' ? 'Tất cả' : getStatusText(s)}</option>)}
           </select>
 
           <Button onClick={() => fetchOrders()}>Làm mới</Button>
@@ -95,20 +153,32 @@ export default function OrderManagement() {
           <tbody>
             {pageData.map(order => (
               <tr key={order.id} className="border-t hover:bg-gray-50">
-                <td className="p-3">{order.id}</td>
-                <td className="p-3">{order.table ? `Bàn ${order.table.tableNumber}` : '-'}</td>
-                <td className="p-3">{order.customer ? (order.customer.fullName || order.customer.username) : 'Khách vãng lai'}</td>
-                <td className="p-3">{order.items?.length || 0}</td>
-                <td className="p-3 text-right">{order.total?.toLocaleString() || 0}₫</td>
-                <td className="p-3">{order.status}</td>
-                <td className="p-3">{new Date(order.createdAt).toLocaleString()}</td>
-                <td className="p-3 text-right space-x-2">
-                  {order.status !== 'COMPLETED' && (
-                    <Button onClick={() => handleStatusChange(order.id, 'COMPLETED')} className="mr-2">Hoàn thành</Button>
-                  )}
-                  {order.status !== 'CANCELLED' && (
-                    <Button variant="outline" onClick={() => handleStatusChange(order.id, 'CANCELLED')}>Hủy</Button>
-                  )}
+                <td className="p-3 font-medium">#{order.id}</td>
+                <td className="p-3">{order.tableName || 'Mang đi'}</td>
+                <td className="p-3">{order.customerName || 'Khách vãng lai'}</td>
+                <td className="p-3">
+                  <span className="text-sm text-gray-600">{order.items?.length || 0} món</span>
+                </td>
+                <td className="p-3 text-right font-semibold">{order.totalAmount?.toLocaleString() || 0}₫</td>
+                <td className="p-3">
+                  <span className={`px-3 py-1 rounded-full text-xs font-medium ${getStatusColor(order.status)}`}>
+                    {getStatusText(order.status)}
+                  </span>
+                </td>
+                <td className="p-3 text-sm text-gray-600">{new Date(order.createdAt).toLocaleString('vi-VN')}</td>
+                <td className="p-3 text-right">
+                  <div className="flex justify-end gap-2">
+                    {getAvailableActions(order.status).map((action) => (
+                      <Button 
+                        key={action.status}
+                        size="sm"
+                        className={`text-white ${action.color}`}
+                        onClick={() => handleStatusChange(order.id, action.status)}
+                      >
+                        {action.label}
+                      </Button>
+                    ))}
+                  </div>
                 </td>
               </tr>
             ))}

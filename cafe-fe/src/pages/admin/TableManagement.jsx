@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Plus, Users, Coffee, Clock } from 'lucide-react';
+import { Plus, Users, Coffee, Clock, Grid3x3, List, MapPin, CheckCircle, XCircle } from 'lucide-react';
 import { Button } from '../../components/ui/button';
 import { getAllTables, createTable, updateTableStatus } from '../../api/table.api';
 import { toast } from 'sonner';
@@ -7,6 +7,7 @@ import { toast } from 'sonner';
 export default function TableManagement() {
   const [tables, setTables] = useState([]);
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
+  const [viewMode, setViewMode] = useState('grid'); // 'grid' or 'list'
   const [formData, setFormData] = useState({
     name: '',
     location: '',
@@ -81,69 +82,155 @@ export default function TableManagement() {
     }
   };
 
+  const getAvailableActions = (currentStatus) => {
+    switch (currentStatus) {
+      case 'AVAILABLE':
+        return [
+          { status: 'RESERVED', label: 'Đặt trước', variant: 'outline' },
+          { status: 'OCCUPIED', label: 'Nhận khách', variant: 'default' }
+        ];
+      case 'RESERVED':
+        return [
+          { status: 'OCCUPIED', label: 'Khách đến', variant: 'default' },
+          { status: 'AVAILABLE', label: 'Hủy đặt', variant: 'outline' }
+        ];
+      case 'OCCUPIED':
+        return [
+          { status: 'COMPLETED', label: 'Thanh toán', variant: 'default' }
+        ];
+      case 'COMPLETED':
+        return [
+          { status: 'AVAILABLE', label: 'Dọn bàn xong', variant: 'default' }
+        ];
+      default:
+        return [];
+    }
+  };
+
   return (
     <div className="p-6">
       <div className="flex justify-between items-center mb-6">
         <h1 className="text-2xl font-bold">Quản lý Bàn</h1>
-        <Button onClick={() => setIsAddModalOpen(true)}>
-          <Plus className="w-4 h-4 mr-2" />
-          Thêm bàn mới
-        </Button>
-      </div>
-
-      {/* Tables Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-        {tables.map((table) => (
-          <div key={table.id} className="bg-white rounded-lg shadow p-6">
-            <div className="flex justify-between items-start mb-4">
-              <h3 className="text-xl font-bold">{table.name}</h3>
-              <span className={`px-3 py-1 rounded-full text-sm font-medium ${getStatusColor(table.status)}`}>
-                {getStatusText(table.status)}
-              </span>
-            </div>
-            
-            <div className="space-y-2 mb-4">
-              {table.location && (
-                <div className="flex items-center text-gray-600">
-                  <Users className="w-4 h-4 mr-2" />
-                  <span>Vị trí: {table.location}</span>
-                </div>
-              )}
-            </div>
-
-            <div className="space-x-2">
-              <Button
-                variant={table.status === 'AVAILABLE' ? 'default' : 'outline'}
-                size="sm"
-                onClick={() => handleStatusChange(table.id, 'AVAILABLE')}
-              >
-                Trống
-              </Button>
-              <Button
-                variant={table.status === 'OCCUPIED' ? 'default' : 'outline'}
-                size="sm"
-                onClick={() => handleStatusChange(table.id, 'OCCUPIED')}
-              >
-                Có khách
-              </Button>
-              <Button
-                variant={table.status === 'RESERVED' ? 'default' : 'outline'}
-                size="sm"
-                onClick={() => handleStatusChange(table.id, 'RESERVED')}
-              >
-                Đặt trước
-              </Button>
-              <Button
-                variant={table.status === 'COMPLETED' ? 'default' : 'outline'}
-                size="sm"
-                onClick={() => handleStatusChange(table.id, 'COMPLETED')}
-              >
-                Hoàn thành
-              </Button>
-            </div>
+        <div className="flex gap-3">
+          <div className="flex bg-gray-100 rounded-lg p-1">
+            <button
+              className={`px-3 py-1 rounded ${viewMode === 'grid' ? 'bg-white shadow' : ''}`}
+              onClick={() => setViewMode('grid')}
+            >
+              <Grid3x3 className="w-4 h-4" />
+            </button>
+            <button
+              className={`px-3 py-1 rounded ${viewMode === 'list' ? 'bg-white shadow' : ''}`}
+              onClick={() => setViewMode('list')}
+            >
+              <List className="w-4 h-4" />
+            </button>
           </div>
-        ))}
+          <Button onClick={() => setIsAddModalOpen(true)}>
+            <Plus className="w-4 h-4 mr-2" />
+            Thêm bàn mới
+          </Button>
+        </div>
       </div>
+
+      {/* Grid View */}
+      {viewMode === 'grid' && (
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+          {tables.map((table) => (
+            <div key={table.id} className="bg-white rounded-lg shadow p-6 hover:shadow-lg transition-shadow">
+              <div className="flex justify-between items-start mb-4">
+                <h3 className="text-xl font-bold">{table.name}</h3>
+                <span className={`px-3 py-1 rounded-full text-sm font-medium ${getStatusColor(table.status)}`}>
+                  {getStatusText(table.status)}
+                </span>
+              </div>
+              
+              <div className="space-y-2 mb-4">
+                {table.location && (
+                  <div className="flex items-center text-gray-600">
+                    <MapPin className="w-4 h-4 mr-2" />
+                    <span>{table.location}</span>
+                  </div>
+                )}
+              </div>
+
+              <div className="flex flex-wrap gap-2">
+                {getAvailableActions(table.status).map((action) => (
+                  <Button
+                    key={action.status}
+                    variant={action.variant}
+                    size="sm"
+                    onClick={() => handleStatusChange(table.id, action.status)}
+                  >
+                    {action.label}
+                  </Button>
+                ))}
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+
+      {/* List View */}
+      {viewMode === 'list' && (
+        <div className="bg-white rounded-lg shadow overflow-hidden">
+          <table className="min-w-full divide-y divide-gray-200">
+            <thead className="bg-gray-50">
+              <tr>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Tên bàn
+                </th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Vị trí
+                </th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Trạng thái
+                </th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Thao tác
+                </th>
+              </tr>
+            </thead>
+            <tbody className="bg-white divide-y divide-gray-200">
+              {tables.map((table) => (
+                <tr key={table.id} className="hover:bg-gray-50">
+                  <td className="px-6 py-4 whitespace-nowrap">
+                    <div className="flex items-center">
+                      <Users className="w-5 h-5 mr-2 text-gray-400" />
+                      <span className="text-sm font-medium text-gray-900">{table.name}</span>
+                    </div>
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap">
+                    <div className="flex items-center text-sm text-gray-500">
+                      <MapPin className="w-4 h-4 mr-2" />
+                      {table.location || '-'}
+                    </div>
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap">
+                    <span className={`px-3 py-1 rounded-full text-xs font-medium ${getStatusColor(table.status)}`}>
+                      {getStatusText(table.status)}
+                    </span>
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap text-sm">
+                    <div className="flex gap-2">
+                      {getAvailableActions(table.status).map((action) => (
+                        <Button
+                          key={action.status}
+                          variant={action.variant}
+                          size="sm"
+                          onClick={() => handleStatusChange(table.id, action.status)}
+                        >
+                          {action.label}
+                        </Button>
+                      ))}
+                    </div>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
 
       {/* Add Table Modal */}
       {isAddModalOpen && (

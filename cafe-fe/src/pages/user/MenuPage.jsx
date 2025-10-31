@@ -1,7 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Button } from '../../components/ui/button';
-import { Coffee, GlassWater, Wine, Soup, ShoppingCart, Plus, Minus, X } from 'lucide-react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { Coffee, Wine, Soup, Plus, Minus, X } from 'lucide-react';
 import { toast } from 'sonner';
 import { getMenu } from '../../api/product.api';
 import { createOrder } from '../../api/order.api';
@@ -35,6 +34,8 @@ const MenuPage = () => {
     const fetchProducts = async () => {
         try {
             const data = await getMenu();
+            console.log('Menu products:', data);
+            console.log('First product imageUrl:', data[0]?.imageUrl);
             setProducts(data);
         } catch (e) {
             console.error(e);
@@ -83,7 +84,6 @@ const MenuPage = () => {
                         <h2 className="text-lg font-semibold mb-4">Danh mục</h2>
                         <div className="space-y-2">
                             {categories.map(cat => {
-                                const Icon = cat.icon;
                                 return (
                                     <button
                                         key={cat.id}
@@ -123,7 +123,16 @@ const MenuPage = () => {
                                         {/* Image left */}
                                         <div className="w-24 h-24 bg-gray-100 rounded-lg flex items-center justify-center overflow-hidden">
                                             {product.imageUrl ? (
-                                                <img src={product.imageUrl} alt={product.name} className="object-cover w-full h-full" />
+                                                <img 
+                                                    src={product.imageUrl} 
+                                                    alt={product.name} 
+                                                    className="object-cover w-full h-full"
+                                                    onError={(e) => {
+                                                        console.error('Image load error:', product.imageUrl);
+                                                        e.target.style.display = 'none';
+                                                        e.target.parentElement.innerHTML = '<svg class="w-12 h-12 text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>';
+                                                    }}
+                                                />
                                             ) : (
                                                 <Coffee className="w-12 h-12 text-gray-300" />
                                             )}
