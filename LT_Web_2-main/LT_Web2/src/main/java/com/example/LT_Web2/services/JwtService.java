@@ -21,7 +21,7 @@ public class JwtService {
                                                                                                             // key an
                                                                                                             // toàn hơn
     public static final long JWT_EXPIRATION = 1000 * 60 * 60 * 8; // 8 hours (increased from 30 minutes)
-
+// subject
     public String extractUsername(String token) {
         return extractClaim(token, Claims::getSubject);
     }
@@ -38,7 +38,6 @@ public class JwtService {
                 .parseClaimsJws(token)
                 .getBody();
     }
-
     private Key getSignKey() {
         byte[] keyBytes = Decoders.BASE64.decode(SECRET);
         return Keys.hmacShaKeyFor(keyBytes);
