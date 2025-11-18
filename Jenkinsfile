@@ -43,21 +43,19 @@ pipeline {
     stage('Frontend Tests') {
       steps {
         dir(FRONTEND_DIR) {
-          echo "Installing frontend dependencies..."
-          sh 'npm ci'
-          echo "Skipping frontend tests for now"
+          echo "==============================================="
+          echo "⏭️  Skipping frontend tests (Docker will build)"
+          echo "==============================================="
+          echo "Frontend will be built inside Docker container"
         }
       }
     }
     stage('Build Frontend') {
       steps {
-        dir(FRONTEND_DIR) {
-          echo "Building React production bundle..."
-          sh 'npm run build'
-        }
         script {
-          echo "Archiving frontend build artifacts..."
-          archiveArtifacts artifacts: "${FRONTEND_DIR}/build/**", fingerprint: true
+          echo "==============================================="
+          echo "⏭️  Frontend will be built in Docker stage"
+          echo "==============================================="
         }
       }
     }
