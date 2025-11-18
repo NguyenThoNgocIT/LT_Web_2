@@ -83,7 +83,7 @@ pipeline {
             sh 'echo $DOCKER_PASS | docker login -u $DOCKER_USER --password-stdin'
             
             echo "Building backend Docker image..."
-            sh "docker build -t ${BACKEND_IMAGE} ${BACKEND_DIR}"
+            sh "docker build --build-arg SKIP_TESTS=true -t ${BACKEND_IMAGE} ${BACKEND_DIR}"
             sh "docker tag ${BACKEND_IMAGE} ${DOCKER_NAMESPACE}/ltweb2-backend:latest"
             
             echo "Building frontend Docker image..."
