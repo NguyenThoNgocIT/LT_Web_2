@@ -16,7 +16,10 @@ export default function Dashboard() {
       setRevenueData({ labels: [], values: [], total: 0 });
     }
   };
-  useEffect(() => { fetchRevenue(revenueType); }, [revenueType]);
+  useEffect(() => { 
+    fetchRevenue(revenueType); 
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [revenueType]);
   const [stats, setStats] = useState({
     totalOrders: 0,
     totalRevenue: 0,

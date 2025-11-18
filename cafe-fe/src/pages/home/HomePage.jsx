@@ -1,6 +1,4 @@
-import { Coffee, CoffeeIcon, Beer, MenuIcon } from 'lucide-react';
-
-import Header from '../../components/Header';
+import { Coffee, Beer, MenuIcon } from 'lucide-react';
 
 export default function HomePage() {
   return (
