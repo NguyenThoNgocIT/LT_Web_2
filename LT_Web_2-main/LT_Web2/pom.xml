@@ -21,34 +21,6 @@
 		<java.version>21</java.version>
 	</properties>
 
-	<repositories>
-		<repository>
-			<id>aliyun-central</id>
-			<name>Aliyun Central Mirror</name>
-			<url>https://maven.aliyun.com/repository/central</url>
-			<releases>
-				<enabled>true</enabled>
-			</releases>
-			<snapshots>
-				<enabled>true</enabled>
-			</snapshots>
-		</repository>
-	</repositories>
-
-	<pluginRepositories>
-		<pluginRepository>
-			<id>aliyun-plugin</id>
-			<name>Aliyun Plugin Mirror</name>
-			<url>https://maven.aliyun.com/repository/central</url>
-			<releases>
-				<enabled>true</enabled>
-			</releases>
-			<snapshots>
-				<enabled>true</enabled>
-			</snapshots>
-		</pluginRepository>
-	</pluginRepositories>
-
 	<dependencies>
 		<dependency>
 			<groupId>org.springframework.boot</groupId>
