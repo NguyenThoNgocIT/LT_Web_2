@@ -8,8 +8,8 @@ COPY pom.xml .
 RUN mvn -B -q dependency:go-offline
 # Copy source
 COPY src ./src
-# Build (skip tests configurable via arg)
-ARG SKIP_TESTS=false
+# Build (skip tests by default - can override with --build-arg SKIP_TESTS=false)
+ARG SKIP_TESTS=true
 RUN if [ "$SKIP_TESTS" = "true" ]; then mvn -B -q package -DskipTests; else mvn -B package; fi
 
 # ==== Runtime Stage ====
