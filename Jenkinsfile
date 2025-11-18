@@ -63,7 +63,15 @@ pipeline {
       steps {
         dir(BACKEND_DIR) {
           echo "Packaging Spring Boot application..."
-          sh 'mvn -B package -DskipTests=true'
+          echo "Clearing Maven cache..."
+          sh 'rm -rf ~/.m2/repository 2>/dev/null || true'
+          sh '''
+            mvn -B -DskipTests=true \
+              -Dmaven.repo.local=/tmp/maven-cache \
+              -DarchetypeRepository=https://repo.maven.apache.org/maven2 \
+              -Dorg.slf4j.simpleLogger.defaultLogLevel=warn \
+              clean package
+          '''
         }
         script {
           echo "Archiving backend JAR..."
