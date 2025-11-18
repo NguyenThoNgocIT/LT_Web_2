@@ -31,7 +31,7 @@ pipeline {
           echo "==============================================="
           echo "⏭️  Skipping backend tests (requires PostgreSQL)"
           echo "==============================================="
-          sh 'mvn -B -q clean compile -DskipTests -X 2>&1 | tail -20 || true'
+          sh 'mvn -B -q clean compile -DskipTests'
         }
       }
       post {
@@ -63,14 +63,10 @@ pipeline {
       steps {
         dir(BACKEND_DIR) {
           echo "Packaging Spring Boot application..."
-          echo "Clearing Maven cache..."
-          sh 'rm -rf ~/.m2/repository 2>/dev/null || true'
           sh '''
-            mvn -B -DskipTests=true \
-              -Dmaven.repo.local=/tmp/maven-cache \
-              -DarchetypeRepository=https://repo.maven.apache.org/maven2 \
+            mvn -B -q -DskipTests=true \
               -Dorg.slf4j.simpleLogger.defaultLogLevel=warn \
-              clean package
+              package
           '''
         }
         script {
