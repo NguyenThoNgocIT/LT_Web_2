@@ -76,9 +76,6 @@ pipeline {
       }
     }
     stage('Docker Build Images') {
-      when { 
-        branch 'deploy'
-      }
       steps {
         script {
           echo "Logging into DockerHub..."
@@ -106,7 +103,6 @@ pipeline {
       }
     }
     stage('Deploy (Docker Compose)') {
-      when { branch 'deploy' }
       steps {
         script {
           echo "Deploying application with docker-compose..."
