@@ -14,12 +14,7 @@ pipeline {
   }
   options {
     timestamps()
-    ansiColor('xterm')
     buildDiscarder(logRotator(numToKeepStr: '10'))
-  }
-  triggers {
-    // GitHub webhook will trigger automatically
-    // pollSCM disabled to save resources - use webhook only
   }
   stages {
     stage('Checkout') {
