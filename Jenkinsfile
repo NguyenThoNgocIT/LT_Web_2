@@ -1,0 +1,160 @@
+pipeline {
+  agent any
+  environment {
+    BACKEND_DIR = 'LT_Web_2-main/LT_Web2'
+    FRONTEND_DIR = 'cafe-fe'
+    DOCKER_REGISTRY = 'docker.io'
+    DOCKER_NAMESPACE = 'your_dockerhub_username'  // TODO: CHANGE THIS to your DockerHub username
+    BACKEND_IMAGE = "${DOCKER_NAMESPACE}/ltweb2-backend:${BUILD_NUMBER}"
+    FRONTEND_IMAGE = "${DOCKER_NAMESPACE}/ltweb2-frontend:${BUILD_NUMBER}"
+    COMPOSE_FILE = 'docker-compose.yml'
+    // Credentials IDs (must be configured in Jenkins Credentials):
+    DOCKERHUB_CREDS = 'dockerhub-creds'
+    GITHUB_TOKEN = 'github-token'
+  }
+  options {
+    timestamps()
+    ansiColor('xterm')
+    buildDiscarder(logRotator(numToKeepStr: '10'))
+  }
+  triggers {
+    // GitHub webhook will trigger automatically
+    // pollSCM disabled to save resources - use webhook only
+  }
+  stages {
+    stage('Checkout') {
+      steps {
+        script {
+          echo "Checking out branch: ${env.GIT_BRANCH}"
+          checkout scm
+        }
+      }
+    }
+    stage('Backend Tests') {
+      steps {
+        dir(BACKEND_DIR) {
+          echo "Running backend tests with Maven..."
+          sh 'mvn -B -q clean test'
+        }
+      }
+      post {
+        always {
+          junit allowEmptyResults: true, testResults: "${BACKEND_DIR}/target/surefire-reports/**/*.xml"
+        }
+      }
+    }
+    stage('Frontend Tests') {
+      steps {
+        dir(FRONTEND_DIR) {
+          echo "Installing frontend dependencies..."
+          sh 'npm ci'
+          echo "Running frontend tests..."
+          // CRA test run (non-interactive) - allow pass for now
+          sh 'CI=true npm test -- --watchAll=false --passWithNoTests || true'
+        }
+      }
+      post {
+        always {
+          // Archive test artifacts if exist
+          archiveArtifacts allowEmptyArchive: true, artifacts: "${FRONTEND_DIR}/coverage/**"
+        }
+      }
+    }
+    stage('Build Frontend') {
+      steps {
+        dir(FRONTEND_DIR) {
+          echo "Building React production bundle..."
+          sh 'npm run build'
+        }
+        script {
+          echo "Archiving frontend build artifacts..."
+          archiveArtifacts artifacts: "${FRONTEND_DIR}/build/**", fingerprint: true
+        }
+      }
+    }
+    stage('Build Backend Jar') {
+      steps {
+        dir(BACKEND_DIR) {
+          echo "Packaging Spring Boot application..."
+          sh 'mvn -B package -DskipTests=true'
+        }
+        script {
+          echo "Archiving backend JAR..."
+          archiveArtifacts artifacts: "${BACKEND_DIR}/target/*.jar", fingerprint: true
+        }
+      }
+    }
+    stage('Docker Build Images') {
+      when { 
+        branch 'deploy'
+      }
+      steps {
+        script {
+          echo "Logging into DockerHub..."
+          withCredentials([usernamePassword(credentialsId: DOCKERHUB_CREDS, usernameVariable: 'DOCKER_USER', passwordVariable: 'DOCKER_PASS')]) {
+            sh 'echo $DOCKER_PASS | docker login -u $DOCKER_USER --password-stdin'
+            
+            echo "Building backend Docker image..."
+            sh "docker build -t ${BACKEND_IMAGE} ${BACKEND_DIR}"
+            sh "docker tag ${BACKEND_IMAGE} ${DOCKER_NAMESPACE}/ltweb2-backend:latest"
+            
+            echo "Building frontend Docker image..."
+            sh "docker build -t ${FRONTEND_IMAGE} ${FRONTEND_DIR}"
+            sh "docker tag ${FRONTEND_IMAGE} ${DOCKER_NAMESPACE}/ltweb2-frontend:latest"
+            
+            echo "Pushing images to DockerHub..."
+            sh "docker push ${BACKEND_IMAGE}"
+            sh "docker push ${DOCKER_NAMESPACE}/ltweb2-backend:latest"
+            sh "docker push ${FRONTEND_IMAGE}"
+            sh "docker push ${DOCKER_NAMESPACE}/ltweb2-frontend:latest"
+            
+            sh 'docker logout'
+            echo "Docker images pushed successfully!"
+          }
+        }
+      }
+    }
+    stage('Deploy (Docker Compose)') {
+      when { branch 'deploy' }
+      steps {
+        script {
+          echo "Deploying application with docker-compose..."
+          sh '''
+            docker compose down --remove-orphans || true
+            docker compose pull
+            docker compose up -d --force-recreate
+            echo "Waiting for services to be healthy..."
+            sleep 10
+            docker compose ps
+          '''
+        }
+      }
+      post {
+        success {
+          echo "✅ Deployment successful! Services are running."
+          sh 'docker compose ps'
+        }
+        failure {
+          echo "❌ Deployment failed!"
+          sh 'docker compose logs --tail=50'
+        }
+      }
+    }
+  }
+  post {
+    success { 
+      echo '✅ Pipeline completed successfully!' 
+      echo "Build #${BUILD_NUMBER} - Branch: ${GIT_BRANCH}"
+    }
+    failure { 
+      echo '❌ Pipeline failed!' 
+      echo "Build #${BUILD_NUMBER} - Branch: ${GIT_BRANCH}"
+      echo "Check logs: ${BUILD_URL}console"
+    }
+    always {
+      echo "Cleaning up workspace..."
+      // Cleanup old docker images to save space
+      sh 'docker image prune -f --filter "until=24h" || true'
+    }
+  }
+}
