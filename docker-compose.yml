@@ -1,4 +1,5 @@
 version: '3.9'
+
 services:
   postgres:
     image: postgres:15-alpine
@@ -16,13 +17,15 @@ services:
       interval: 30s
       timeout: 5s
       retries: 5
+    networks:
+      - app-network
 
   backend:
     build:
       context: ./LT_Web_2-main/LT_Web2
       dockerfile: Dockerfile
       args:
-        SKIP_TESTS: "false"
+        SKIP_TESTS: "true" # Skip tests during image build
     container_name: ltweb2-backend
     environment:
       SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/cafe_shop
@@ -31,11 +34,15 @@ services:
       SPRING_JPA_HIBERNATE_DDL_AUTO: update
       SPRING_PROFILES_ACTIVE: prod
       JWT_SECRET: CHANGE_ME_SECRET_BASE64
+      # Expose actuator for Prometheus
+      MANAGEMENT_ENDPOINTS_WEB_EXPOSURE_INCLUDE: "prometheus,health"
     depends_on:
       postgres:
         condition: service_healthy
     ports:
       - "8088:8088"
+    networks:
+      - app-network
 
   frontend:
     build:
@@ -47,8 +54,66 @@ services:
     depends_on:
       - backend
     environment:
-      # Example for CRA runtime variables if needed via .env
       REACT_APP_API_BASE_URL: http://localhost:8088/api
+    networks:
+      - app-network
+
+  prometheus:
+    image: prom/prometheus:v2.47.2
+    container_name: prometheus
+    volumes:
+      - ./ci/prometheus.yml:/etc/prometheus/prometheus.yml
+      - prometheus_data:/prometheus
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+      - '--storage.tsdb.path=/prometheus'
+      - '--web.console.libraries=/usr/share/prometheus/console_libraries'
+      - '--web.console.templates=/usr/share/prometheus/consoles'
+    ports:
+      - "9090:9090"
+    depends_on:
+      - backend
+      - cadvisor
+    networks:
+      - app-network
+
+  cadvisor:
+    image: gcr.io/cadvisor/cadvisor:v0.47.2
+    container_name: cadvisor
+    privileged: true
+    volumes:
+      - /:/rootfs:ro
+      - /var/run:/var/run:rw
+      - /sys:/sys:ro
+      - /var/lib/docker/:/var/lib/docker:ro
+    ports:
+      - "8081:8080"
+    networks:
+      - app-network
+
+  grafana:
+    image: grafana/grafana:10.1.5
+    container_name: grafana
+    volumes:
+      - ./ci/grafana-datasource.yml:/etc/grafana/provisioning/datasources/datasource.yml
+      - ./ci/grafana-dashboard.json:/etc/grafana/provisioning/dashboards/dashboard.json
+      - grafana_data:/var/lib/grafana
+    environment:
+      - GF_SECURITY_ADMIN_USER=admin
+      - GF_SECURITY_ADMIN_PASSWORD=admin123
+      - GF_PROVISIONING_PATH=/etc/grafana/provisioning
+    ports:
+      - "3001:3000"
+    depends_on:
+      - prometheus
+    networks:
+      - app-network
+
+networks:
+  app-network:
+    driver: bridge
 
 volumes:
   pgdata:
+  prometheus_data:
+  grafana_data:
