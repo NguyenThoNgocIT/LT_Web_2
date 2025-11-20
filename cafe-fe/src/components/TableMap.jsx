@@ -1,6 +1,5 @@
 import { useState, useEffect } from 'react';
 import { Button } from './ui/button';
-import { Users, Coffee, Clock } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { toast } from 'sonner';
 import { getAvailableTables, createReservation } from '../api/table.api';

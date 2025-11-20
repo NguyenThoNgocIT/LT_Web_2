@@ -1,4 +1,3 @@
-import { useState, useEffect } from 'react';
 import TableMap from '../../components/TableMap';
 import { Button } from '../../components/ui/button';
 import { motion } from 'framer-motion';

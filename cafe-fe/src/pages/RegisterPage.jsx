@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { Button } from '../components/ui/button';
-import { UserCircle2, Lock, Mail, User } from 'lucide-react';
+import { Lock, Mail, User } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { register } from '../api/auth.api';
 import { toast } from 'sonner';

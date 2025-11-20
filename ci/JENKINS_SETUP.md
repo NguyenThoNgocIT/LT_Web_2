@@ -382,7 +382,7 @@ GitHub Webhooks page → Recent Deliveries:
 ### 7.1. Cập Nhật Jenkinsfile
 
 Mở file `Jenkinsfile` và sửa dòng:
-
+ 
 ```groovy
 DOCKER_NAMESPACE = 'your_dockerhub_username'  // Đổi thành username thật
 ```

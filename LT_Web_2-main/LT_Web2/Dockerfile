@@ -8,9 +8,8 @@ COPY pom.xml .
 RUN mvn -B -q dependency:go-offline
 # Copy source
 COPY src ./src
-# Build (skip tests configurable via arg)
-ARG SKIP_TESTS=false
-RUN if [ "$SKIP_TESTS" = "true" ]; then mvn -B -q package -DskipTests; else mvn -B package; fi
+# Build application (skip tests - no database in build environment)
+RUN mvn -B -q -DskipTests=true package
 
 # ==== Runtime Stage ====
 FROM eclipse-temurin:21-jre-alpine AS runtime

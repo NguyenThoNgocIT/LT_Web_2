@@ -56,7 +56,7 @@ export const cancelReservation = async (id) => {
     return res.data;
 };
 
-export default { 
+const tableApi = { 
     getAllTables, 
     getTablesByStatus,
     createTable, 
@@ -68,3 +68,5 @@ export default {
     getMyReservations,
     cancelReservation
 };
+
+export default tableApi;
