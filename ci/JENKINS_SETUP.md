@@ -91,7 +91,8 @@
 
 ```bash
 openssl rand -hex 20
-# Output example: 801b6cd8d7d7ed5db48dd3391b67fa5a0562543a
+# nguyenthongoc@localhost:~$ openssl rand -hex 20
+# 8bf3b8f0f15a791cce0ef4be272f5d7b68bc6893
 
 ```
 
@@ -195,7 +196,7 @@ ip addr show | grep "inet " | grep -v 127.0.0.1
 # Hoặc dùng hostname
 hostname -I
 
-# Kết quả ví dụ: 192.168.1.100 (đây là IP bạn cần)
+# Kết quả 192.168.147.132
 ```
 
 **Cách 2: Kiểm tra trong VMware:**
