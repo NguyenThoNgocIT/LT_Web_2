@@ -34,133 +34,143 @@ import org.springframework.core.annotation.Order;
 @EnableMethodSecurity(prePostEnabled = true)
 public class SecurityConfig {
 
-    @Autowired
-    private UserRepository userRepository;
+        @Autowired
+        private UserRepository userRepository;
 
-    @Bean
-    public JwtAuthFilter jwtAuthFilter(UserDetailsService userDetailsService, JwtService jwtService) {
-        return new JwtAuthFilter(userDetailsService, jwtService);
-    }
+        @Bean
+        public JwtAuthFilter jwtAuthFilter(UserDetailsService userDetailsService, JwtService jwtService) {
+                return new JwtAuthFilter(userDetailsService, jwtService);
+        }
 
-    @Bean
-    @Order(1)
-    public SecurityFilterChain actuatorSecurityFilterChain(HttpSecurity http) throws Exception {
-        System.out.println("[SecurityConfig] Initializing ACTUATOR security filter chain (Order 1)...");
-        http
-                .securityMatcher("/actuator/**")
-                .authorizeHttpRequests(auth -> auth.anyRequest().permitAll());
-        return http.build();
-    }
+        @Bean
+        @Order(1)
+        public SecurityFilterChain actuatorSecurityFilterChain(HttpSecurity http) throws Exception {
+                System.out.println("✅ ACTUATOR FILTER CHAIN IS LOADED");
+                http
+                                .securityMatcher("/actuator/**")
+                                .authorizeHttpRequests(auth -> auth.anyRequest().permitAll());
+                return http.build();
+        }
 
-    @Bean
-    public AuthenticationManager authenticationManager(
-            AuthenticationConfiguration authConfig) throws Exception {
-        return authConfig.getAuthenticationManager();
-    }
+        @Bean
+        public AuthenticationManager authenticationManager(
+                        AuthenticationConfiguration authConfig) throws Exception {
+                return authConfig.getAuthenticationManager();
+        }
 
-    @Bean
-    public UserDetailsService userDetailsService() {
-        return email -> userRepository.findByEmail(email)
-                .orElseThrow(() -> new UsernameNotFoundException("User not found: " + email));
-    }
+        @Bean
+        public UserDetailsService userDetailsService() {
+                return email -> userRepository.findByEmail(email)
+                                .orElseThrow(() -> new UsernameNotFoundException("User not found: " + email));
+        }
 
-    @Bean
-    public BCryptPasswordEncoder passwordEncoder() {
-        return new BCryptPasswordEncoder();
-    }
+        @Bean
+        public BCryptPasswordEncoder passwordEncoder() {
+                return new BCryptPasswordEncoder();
+        }
 
-    @Bean
-    public AuthenticationProvider authenticationProvider() {
-        DaoAuthenticationProvider provider = new DaoAuthenticationProvider();
-        provider.setUserDetailsService(userDetailsService());
-        provider.setPasswordEncoder(passwordEncoder());
-        return provider;
-    }
+        @Bean
+        public AuthenticationProvider authenticationProvider() {
+                DaoAuthenticationProvider provider = new DaoAuthenticationProvider();
+                provider.setUserDetailsService(userDetailsService());
+                provider.setPasswordEncoder(passwordEncoder());
+                return provider;
+        }
 
-    @Bean
-    @Order(2)
-    public SecurityFilterChain securityFilterChain(HttpSecurity http, JwtAuthFilter jwtAuthFilter) throws Exception {
-        System.out.println("[SecurityConfig] Initializing API security filter chain (Order 2)...");
+        @Bean
+        @Order(2)
+        public SecurityFilterChain securityFilterChain(HttpSecurity http, JwtAuthFilter jwtAuthFilter)
+                        throws Exception {
+                System.out.println("[SecurityConfig] Initializing API security filter chain (Order 2)...");
 
-        http
-                .cors(cors -> cors.configurationSource(corsConfigurationSource()))
-                .csrf(csrf -> csrf.disable())
-                .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
-                .authorizeHttpRequests(auth -> auth
-                        .requestMatchers("/api/auth/**").permitAll()
-                        .requestMatchers("/uploads/**").permitAll()
-                        .requestMatchers("/api/user/**").hasAnyRole("USER", "ADMIN", "ROOT")
-                        .requestMatchers("/api/admin/**").hasAnyRole("ADMIN", "ROOT")
-                        .anyRequest().authenticated())
-                .exceptionHandling(ex -> ex
-                        .authenticationEntryPoint((request, response, authException) -> {
-                            System.out.println(
-                                    "[SecurityConfig] AuthenticationEntryPoint called for: " + request.getRequestURI());
-                            response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
-                            response.setContentType("application/json; charset=utf-8");
-                            response.setCharacterEncoding("utf-8");
-                            response.getWriter().write("""
-                                    {
-                                      "timestamp": "%s",
-                                      "status": 401,
-                                      "error": "Unauthorized",
-                                      "message": "Token không hợp lệ hoặc chưa cung cấp token",
-                                      "path": "%s"
-                                    }
-                                    """.formatted(
-                                    java.time.Instant.now(),
-                                    request.getRequestURI()));
-                        })
-                        .accessDeniedHandler((request, response, accessDeniedException) -> {
-                            System.out.println(
-                                    "[SecurityConfig] AccessDeniedHandler called for: " + request.getRequestURI());
-                            response.setStatus(HttpServletResponse.SC_FORBIDDEN);
-                            response.setContentType("application/json; charset=utf-8");
-                            response.setCharacterEncoding("utf-8");
-                            response.getWriter().write("""
-                                    {
-                                      "timestamp": "%s",
-                                      "status": 403,
-                                      "error": "Forbidden",
-                                      "message": "Bạn không có quyền truy cập tài nguyên này",
-                                      "path": "%s"
-                                    }
-                                    """.formatted(
-                                    java.time.Instant.now(),
-                                    request.getRequestURI()));
-                        }))
-                .addFilterBefore(jwtAuthFilter, UsernamePasswordAuthenticationFilter.class);
+                http
+                                .cors(cors -> cors.configurationSource(corsConfigurationSource()))
+                                .csrf(csrf -> csrf.disable())
+                                .sessionManagement(session -> session
+                                                .sessionCreationPolicy(SessionCreationPolicy.STATELESS))
+                                .authorizeHttpRequests(auth -> auth
+                                                .requestMatchers("/api/auth/**").permitAll()
+                                                .requestMatchers("/uploads/**").permitAll()
+                                                .requestMatchers("/api/user/**").hasAnyRole("USER", "ADMIN", "ROOT")
+                                                .requestMatchers("/api/admin/**").hasAnyRole("ADMIN", "ROOT")
+                                                .anyRequest().authenticated())
+                                .exceptionHandling(ex -> ex
+                                                .authenticationEntryPoint((request, response, authException) -> {
+                                                        System.out.println(
+                                                                        "[SecurityConfig] AuthenticationEntryPoint called for: "
+                                                                                        + request.getRequestURI());
+                                                        response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
+                                                        response.setContentType("application/json; charset=utf-8");
+                                                        response.setCharacterEncoding("utf-8");
+                                                        response.getWriter()
+                                                                        .write("""
+                                                                                        {
+                                                                                          "timestamp": "%s",
+                                                                                          "status": 401,
+                                                                                          "error": "Unauthorized",
+                                                                                          "message": "Token không hợp lệ hoặc chưa cung cấp token",
+                                                                                          "path": "%s"
+                                                                                        }
+                                                                                        """
+                                                                                        .formatted(
+                                                                                                        java.time.Instant
+                                                                                                                        .now(),
+                                                                                                        request.getRequestURI()));
+                                                })
+                                                .accessDeniedHandler((request, response, accessDeniedException) -> {
+                                                        System.out.println(
+                                                                        "[SecurityConfig] AccessDeniedHandler called for: "
+                                                                                        + request.getRequestURI());
+                                                        response.setStatus(HttpServletResponse.SC_FORBIDDEN);
+                                                        response.setContentType("application/json; charset=utf-8");
+                                                        response.setCharacterEncoding("utf-8");
+                                                        response.getWriter()
+                                                                        .write("""
+                                                                                        {
+                                                                                          "timestamp": "%s",
+                                                                                          "status": 403,
+                                                                                          "error": "Forbidden",
+                                                                                          "message": "Bạn không có quyền truy cập tài nguyên này",
+                                                                                          "path": "%s"
+                                                                                        }
+                                                                                        """
+                                                                                        .formatted(
+                                                                                                        java.time.Instant
+                                                                                                                        .now(),
+                                                                                                        request.getRequestURI()));
+                                                }))
+                                .addFilterBefore(jwtAuthFilter, UsernamePasswordAuthenticationFilter.class);
 
-        return http.build();
-    }
+                return http.build();
+        }
 
-    @Bean
-    public CorsConfigurationSource corsConfigurationSource() {
-        CorsConfiguration config = new CorsConfiguration();
-        // Lấy danh sách origin từ application.properties
-        // (spring.web.cors.allowed-origins)
-        // Nếu không có, mặc định cho phép các origin dev thông dụng (3000, 3001, 5173 -
-        // Vite)
-        String allowed = this.allowedOrigins == null
-                ? "http://localhost:3000,http://localhost:3001,http://localhost:5173"
-                : this.allowedOrigins;
-        // Dùng allowedOriginPatterns để hỗ trợ wildcard/patterns (ví dụ
-        // http://localhost:*)
-        config.setAllowedOriginPatterns(Arrays.stream(allowed.split(","))
-                .map(String::trim)
-                .collect(Collectors.toList()));
-        config.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "OPTIONS"));
-        config.setAllowedHeaders(List.of("*"));
-        // Cho phép gửi cookie/authorization header nếu FE gửi credentials
-        config.setAllowCredentials(true);
+        @Bean
+        public CorsConfigurationSource corsConfigurationSource() {
+                CorsConfiguration config = new CorsConfiguration();
+                // Lấy danh sách origin từ application.properties
+                // (spring.web.cors.allowed-origins)
+                // Nếu không có, mặc định cho phép các origin dev thông dụng (3000, 3001, 5173 -
+                // Vite)
+                String allowed = this.allowedOrigins == null
+                                ? "http://localhost:3000,http://localhost:3001,http://localhost:5173"
+                                : this.allowedOrigins;
+                // Dùng allowedOriginPatterns để hỗ trợ wildcard/patterns (ví dụ
+                // http://localhost:*)
+                config.setAllowedOriginPatterns(Arrays.stream(allowed.split(","))
+                                .map(String::trim)
+                                .collect(Collectors.toList()));
+                config.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "OPTIONS"));
+                config.setAllowedHeaders(List.of("*"));
+                // Cho phép gửi cookie/authorization header nếu FE gửi credentials
+                config.setAllowCredentials(true);
 
-        UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
-        // Áp dụng cho API path. Nếu muốn áp dụng toàn trang, đổi thành "/**".
-        source.registerCorsConfiguration("/api/**", config);
-        return source;
-    }
+                UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
+                // Áp dụng cho API path. Nếu muốn áp dụng toàn trang, đổi thành "/**".
+                source.registerCorsConfiguration("/api/**", config);
+                return source;
+        }
 
-    // Đọc property từ application.properties: spring.web.cors.allowed-origins
-    @Value("${spring.web.cors.allowed-origins:}")
-    private String allowedOrigins;
+        // Đọc property từ application.properties: spring.web.cors.allowed-origins
+        @Value("${spring.web.cors.allowed-origins:}")
+        private String allowedOrigins;
 }
