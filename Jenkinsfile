@@ -104,7 +104,7 @@ pipeline {
     }
     stage('Deploy (Docker Compose)') {
       when {
-        branch 'deploy'
+        branch 'deploy' || branch 'origin/deploy'
       }
       steps {
         script {
