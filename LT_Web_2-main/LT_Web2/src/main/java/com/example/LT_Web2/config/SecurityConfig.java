@@ -62,13 +62,16 @@ public class SecurityConfig {
 
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http, JwtAuthFilter jwtAuthFilter) throws Exception {
+        // Debug: Log security config loading
+        System.out.println("[SecurityConfig] Initializing security filter chain...");
+
         http
                 .cors(cors -> cors.configurationSource(corsConfigurationSource()))
                 .csrf(csrf -> csrf.disable())
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(auth -> auth
-                        .requestMatchers("/actuator/**").permitAll() // Allow all actuator endpoints WITHOUT
-                                                                     // authentication
+                        // MUST be first - actuator endpoints bypass all auth
+                        .requestMatchers("/actuator/prometheus", "/actuator/health", "/actuator/**").permitAll()
                         .requestMatchers("/api/auth/**").permitAll()
                         .requestMatchers("/uploads/**").permitAll() // Allow access to uploaded files
                         .requestMatchers("/api/user/**").hasAnyRole("USER", "ADMIN", "ROOT")

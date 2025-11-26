@@ -30,9 +30,19 @@ public class JwtAuthFilter extends OncePerRequestFilter {
 
     @Override
     protected boolean shouldNotFilter(HttpServletRequest request) throws ServletException {
-        String path = request.getRequestURI();
-        // Skip JWT filter for actuator endpoints - let Spring Security handle them
-        return path.startsWith("/actuator");
+        String uri = request.getRequestURI();
+        String servletPath = request.getServletPath();
+        String pathInfo = request.getPathInfo();
+
+        System.out.println("[JWT Filter] shouldNotFilter check:");
+        System.out.println("  - getRequestURI(): " + uri);
+        System.out.println("  - getServletPath(): " + servletPath);
+        System.out.println("  - getPathInfo(): " + pathInfo);
+
+        boolean skip = uri.startsWith("/actuator") || servletPath.startsWith("/actuator");
+        System.out.println("  - Result: shouldSkip=" + skip);
+
+        return skip;
     }
 
     @Override
