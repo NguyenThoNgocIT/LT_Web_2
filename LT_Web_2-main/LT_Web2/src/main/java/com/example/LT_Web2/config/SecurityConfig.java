@@ -60,7 +60,7 @@ public class SecurityConfig {
         return provider;
     }
 
-    //  SỬA Ở ĐÂY: JwtAuthFilter là tham số, KHÔNG phải field
+    // SỬA Ở ĐÂY: JwtAuthFilter là tham số, KHÔNG phải field
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http, JwtAuthFilter jwtAuthFilter) throws Exception {
         http
@@ -68,6 +68,7 @@ public class SecurityConfig {
                 .csrf(csrf -> csrf.disable())
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(auth -> auth
+                        .requestMatchers("/actuator/prometheus").permitAll() // Allow Prometheus scrape
                         .requestMatchers("/api/auth/**").permitAll()
                         .requestMatchers("/uploads/**").permitAll() // Allow access to uploaded files
                         .requestMatchers("/api/user/**").hasAnyRole("USER", "ADMIN", "ROOT")
