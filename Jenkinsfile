@@ -104,7 +104,7 @@ pipeline {
     }
     stage('Deploy (Docker Compose)') {
       when {
-        branch 'deploy' || branch 'origin/deploy'
+        expression { env.GIT_BRANCH == 'origin/deploy' || env.GIT_BRANCH == 'deploy' }
       }
       steps {
         script {
