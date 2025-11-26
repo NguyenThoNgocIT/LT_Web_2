@@ -34,8 +34,9 @@ public class JwtAuthFilter extends OncePerRequestFilter {
             HttpServletResponse response,
             FilterChain chain) throws ServletException, IOException {
 
-        // Bỏ qua filter cho các endpoint của actuator
-        if (request.getRequestURI().startsWith("/actuator")) {
+        // Bỏ qua filter cho các endpoint của actuator (Prometheus, health, etc)
+        String uri = request.getRequestURI();
+        if (uri.startsWith("/actuator") || uri.equals("/health") || uri.equals("/prometheus")) {
             chain.doFilter(request, response);
             return;
         }
