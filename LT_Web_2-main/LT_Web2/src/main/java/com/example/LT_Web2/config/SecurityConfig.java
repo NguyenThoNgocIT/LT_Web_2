@@ -1,6 +1,7 @@
 package com.example.LT_Web2.config;
 
 import com.example.LT_Web2.repository.UserRepository;
+import com.example.LT_Web2.services.JwtService;
 import org.springframework.beans.factory.annotation.Value;
 import java.util.Arrays;
 import java.util.stream.Collectors;
@@ -35,6 +36,11 @@ public class SecurityConfig {
 
     @Autowired
     private UserRepository userRepository;
+
+    @Bean
+    public JwtAuthFilter jwtAuthFilter(UserDetailsService userDetailsService, JwtService jwtService) {
+        return new JwtAuthFilter(userDetailsService, jwtService);
+    }
 
     @Bean
     @Order(1)
