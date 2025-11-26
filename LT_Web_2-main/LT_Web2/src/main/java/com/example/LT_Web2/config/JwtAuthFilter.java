@@ -29,28 +29,17 @@ public class JwtAuthFilter extends OncePerRequestFilter {
     }
 
     @Override
+    protected boolean shouldNotFilter(HttpServletRequest request) throws ServletException {
+        String path = request.getRequestURI();
+        // Skip JWT filter for actuator endpoints - let Spring Security handle them
+        return path.startsWith("/actuator");
+    }
+
+    @Override
     protected void doFilterInternal(
             HttpServletRequest request,
             HttpServletResponse response,
             FilterChain chain) throws ServletException, IOException {
-
-        // Bỏ qua filter cho các endpoint của actuator (Prometheus, health, etc)
-        String uri = request.getRequestURI();
-        String path = request.getServletPath();
-        
-        System.out.println(">>> [JWT Filter] REQUEST URI: '" + uri + "' | SERVLET PATH: '" + path + "'");
-        
-        // Check multiple ways to ensure we catch actuator endpoints
-        if (uri.startsWith("/actuator") || 
-            path.startsWith("/actuator") ||
-            uri.startsWith("/health") || 
-            path.startsWith("/health") ||
-            uri.equals("/prometheus") || 
-            path.equals("/prometheus")) {
-            System.out.println("✓✓✓ [JWT Filter] BYPASSING JWT for: " + uri);
-            chain.doFilter(request, response);
-            return;
-        }
 
         final String authHeader = request.getHeader("Authorization");
         String jwt = null;
