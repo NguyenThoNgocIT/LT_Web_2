@@ -68,7 +68,7 @@ public class SecurityConfig {
                 .csrf(csrf -> csrf.disable())
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(auth -> auth
-                        .requestMatchers("/actuator/prometheus").permitAll() // Allow Prometheus scrape
+                        .requestMatchers("/actuator/**").permitAll() // Allow all actuator endpoints
                         .requestMatchers("/api/auth/**").permitAll()
                         .requestMatchers("/uploads/**").permitAll() // Allow access to uploaded files
                         .requestMatchers("/api/user/**").hasAnyRole("USER", "ADMIN", "ROOT")
