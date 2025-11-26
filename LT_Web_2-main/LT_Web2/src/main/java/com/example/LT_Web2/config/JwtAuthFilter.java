@@ -29,78 +29,35 @@ public class JwtAuthFilter extends OncePerRequestFilter {
     }
 
     @Override
-    protected boolean shouldNotFilter(HttpServletRequest request) throws ServletException {
-        String path = request.getRequestURI();
-        return path.startsWith("/actuator");
-    }
-
-    @Override
     protected void doFilterInternal(
             HttpServletRequest request,
             HttpServletResponse response,
             FilterChain chain) throws ServletException, IOException {
 
-        String path = request.getRequestURI();
-
-        // SKIP JWT processing for actuator endpoints - let Spring Security handle them
-        if (path.startsWith("/actuator")) {
-            System.out.println("[JWT Filter] SKIPPING JWT processing for actuator path: " + path);
-            chain.doFilter(request, response);
-            return;
-        }
-
         final String authHeader = request.getHeader("Authorization");
         String jwt = null;
         String username = null;
-
-        System.out.println(" [JWT Filter] " + request.getMethod() + " " + path);
-        System.out.println(" [JWT Filter] Authorization header: "
-                + (authHeader != null ? authHeader.substring(0, Math.min(30, authHeader.length())) + "..." : "NULL"));
 
         if (authHeader != null && authHeader.startsWith("Bearer ")) {
             jwt = authHeader.substring(7);
             try {
                 username = jwtService.extractUsername(jwt);
-                System.out.println(" [JWT Filter] Extracted username: " + username);
             } catch (Exception e) {
-                System.err.println(" [JWT Filter] Error extracting username from JWT: " + e.getMessage());
-                e.printStackTrace();
+                // Error extracting username, proceed without authentication
             }
-        } else {
-            System.err.println(" [JWT Filter] No valid Authorization header");
         }
 
-        // Nếu có username và chưa xác thực
         if (username != null && SecurityContextHolder.getContext().getAuthentication() == null) {
-            try {
-                UserDetails userDetails = this.userDetailsService.loadUserByUsername(username);
-                System.out.println("[JWT Filter] Loaded user: " + username);
-                System.out.println(" [JWT Filter] User authorities: " + userDetails.getAuthorities());
+            UserDetails userDetails = this.userDetailsService.loadUserByUsername(username);
 
-                // Kiểm tra token hợp lệ
-                if (jwtService.validateToken(jwt, userDetails)) {
-                    // Tạo authentication token
-                    UsernamePasswordAuthenticationToken authToken = new UsernamePasswordAuthenticationToken(
-                            userDetails,
-                            null,
-                            userDetails.getAuthorities());
-                    authToken.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
-                    SecurityContextHolder.getContext().setAuthentication(authToken);
-                    System.out.println(
-                            " [JWT Filter] JWT authenticated user: " + username + " with roles: "
-                                    + userDetails.getAuthorities());
-                } else {
-                    System.err.println(" [JWT Filter] JWT token invalid for user: " + username);
-                }
-            } catch (Exception e) {
-                System.err.println(" [JWT Filter] Error during JWT authentication: " + e.getMessage());
-                e.printStackTrace();
+            if (jwtService.validateToken(jwt, userDetails)) {
+                UsernamePasswordAuthenticationToken authToken = new UsernamePasswordAuthenticationToken(
+                        userDetails,
+                        null,
+                        userDetails.getAuthorities());
+                authToken.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
+                SecurityContextHolder.getContext().setAuthentication(authToken);
             }
-        } else if (username == null) {
-            System.err.println(" [JWT Filter] Username is null, skipping authentication");
-        } else {
-            System.out.println(" [JWT Filter] User already authenticated: "
-                    + SecurityContextHolder.getContext().getAuthentication().getName());
         }
 
         chain.doFilter(request, response);
