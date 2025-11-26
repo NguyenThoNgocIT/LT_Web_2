@@ -62,7 +62,6 @@ public class SecurityConfig {
 
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http, JwtAuthFilter jwtAuthFilter) throws Exception {
-        // Debug: Log security config loading
         System.out.println("[SecurityConfig] Initializing security filter chain...");
 
         http
@@ -70,15 +69,16 @@ public class SecurityConfig {
                 .csrf(csrf -> csrf.disable())
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(auth -> auth
-                        // MUST be first - actuator endpoints bypass all auth
-                        .requestMatchers("/actuator/prometheus", "/actuator/health", "/actuator/**").permitAll()
+                        .requestMatchers("/actuator/**").permitAll()
                         .requestMatchers("/api/auth/**").permitAll()
-                        .requestMatchers("/uploads/**").permitAll() // Allow access to uploaded files
+                        .requestMatchers("/uploads/**").permitAll()
                         .requestMatchers("/api/user/**").hasAnyRole("USER", "ADMIN", "ROOT")
                         .requestMatchers("/api/admin/**").hasAnyRole("ADMIN", "ROOT")
                         .anyRequest().authenticated())
                 .exceptionHandling(ex -> ex
                         .authenticationEntryPoint((request, response, authException) -> {
+                            System.out.println(
+                                    "[SecurityConfig] AuthenticationEntryPoint called for: " + request.getRequestURI());
                             response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
                             response.setContentType("application/json; charset=utf-8");
                             response.setCharacterEncoding("utf-8");
@@ -95,6 +95,8 @@ public class SecurityConfig {
                                     request.getRequestURI()));
                         })
                         .accessDeniedHandler((request, response, accessDeniedException) -> {
+                            System.out.println(
+                                    "[SecurityConfig] AccessDeniedHandler called for: " + request.getRequestURI());
                             response.setStatus(HttpServletResponse.SC_FORBIDDEN);
                             response.setContentType("application/json; charset=utf-8");
                             response.setCharacterEncoding("utf-8");
@@ -110,8 +112,6 @@ public class SecurityConfig {
                                     java.time.Instant.now(),
                                     request.getRequestURI()));
                         }))
-                // Register JWT filter directly - it has shouldNotFilter() override for
-                // /actuator/**
                 .addFilterBefore(jwtAuthFilter, UsernamePasswordAuthenticationFilter.class);
 
         return http.build();
