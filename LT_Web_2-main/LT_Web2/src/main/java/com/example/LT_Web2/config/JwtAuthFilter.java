@@ -40,11 +40,20 @@ public class JwtAuthFilter extends OncePerRequestFilter {
             HttpServletResponse response,
             FilterChain chain) throws ServletException, IOException {
 
+        String path = request.getRequestURI();
+
+        // SKIP JWT processing for actuator endpoints - let Spring Security handle them
+        if (path.startsWith("/actuator")) {
+            System.out.println("[JWT Filter] SKIPPING JWT processing for actuator path: " + path);
+            chain.doFilter(request, response);
+            return;
+        }
+
         final String authHeader = request.getHeader("Authorization");
         String jwt = null;
         String username = null;
 
-        System.out.println(" [JWT Filter] " + request.getMethod() + " " + request.getRequestURI());
+        System.out.println(" [JWT Filter] " + request.getMethod() + " " + path);
         System.out.println(" [JWT Filter] Authorization header: "
                 + (authHeader != null ? authHeader.substring(0, Math.min(30, authHeader.length())) + "..." : "NULL"));
 
