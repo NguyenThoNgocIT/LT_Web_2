@@ -37,6 +37,7 @@ public class JwtAuthFilter extends OncePerRequestFilter {
         // Bỏ qua filter cho các endpoint của actuator (Prometheus, health, etc)
         String uri = request.getRequestURI();
         if (uri.startsWith("/actuator") || uri.equals("/health") || uri.equals("/prometheus")) {
+            System.out.println("✓ [JWT Filter] BYPASSING JWT for: " + uri);
             chain.doFilter(request, response);
             return;
         }
