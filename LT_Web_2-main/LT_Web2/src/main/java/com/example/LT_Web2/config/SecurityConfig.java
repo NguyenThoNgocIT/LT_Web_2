@@ -5,10 +5,6 @@ import org.springframework.beans.factory.annotation.Value;
 import java.util.Arrays;
 import java.util.stream.Collectors;
 import jakarta.servlet.http.HttpServletResponse;
-import jakarta.servlet.http.HttpServletRequest;
-import jakarta.servlet.FilterChain;
-import jakarta.servlet.ServletException;
-import java.io.IOException;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -28,7 +24,6 @@ import org.springframework.security.web.authentication.UsernamePasswordAuthentic
 import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
-import org.springframework.web.filter.OncePerRequestFilter;
 
 import java.util.List;
 
@@ -65,7 +60,6 @@ public class SecurityConfig {
         return provider;
     }
 
-    // SỬA Ở ĐÂY: JwtAuthFilter là tham số, KHÔNG phải field
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http, JwtAuthFilter jwtAuthFilter) throws Exception {
         http
@@ -113,34 +107,11 @@ public class SecurityConfig {
                                     java.time.Instant.now(),
                                     request.getRequestURI()));
                         }))
-                // Add JWT filter only for non-actuator requests
-                .addFilterBefore(new JwtFilterWrapper(jwtAuthFilter), UsernamePasswordAuthenticationFilter.class);
+                // Register JWT filter directly - it has shouldNotFilter() override for
+                // /actuator/**
+                .addFilterBefore(jwtAuthFilter, UsernamePasswordAuthenticationFilter.class);
 
         return http.build();
-    }
-
-    /**
-     * Wrapper to skip JWT filter for actuator endpoints
-     * This ensures actuator endpoints never reach JWT filter processing
-     */
-    public static class JwtFilterWrapper extends OncePerRequestFilter {
-        private final JwtAuthFilter jwtAuthFilter;
-
-        public JwtFilterWrapper(JwtAuthFilter jwtAuthFilter) {
-            this.jwtAuthFilter = jwtAuthFilter;
-        }
-
-        @Override
-        protected boolean shouldNotFilter(HttpServletRequest request) throws ServletException {
-            String path = request.getRequestURI();
-            return path.startsWith("/actuator");
-        }
-
-        @Override
-        protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response,
-                FilterChain filterChain) throws ServletException, IOException {
-            jwtAuthFilter.doFilter(request, response, filterChain);
-        }
     }
 
     @Bean
