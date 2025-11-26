@@ -21,6 +21,7 @@ services:
       - app-network
 
   backend:
+    image: nguyenthongoc/ltweb2-backend:latest
     build:
       context: ./LT_Web_2-main/LT_Web2
       dockerfile: Dockerfile
@@ -53,6 +54,7 @@ services:
       - app-network
 
   frontend:
+    image: nguyenthongoc/ltweb2-frontend:latest
     build:
       context: ./cafe-fe
       dockerfile: Dockerfile
