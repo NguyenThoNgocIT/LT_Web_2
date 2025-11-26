@@ -108,6 +108,7 @@ services:
     container_name: grafana
     volumes:
       - ./ci/grafana-datasource.yml:/etc/grafana/provisioning/datasources/datasource.yml
+      - ./ci/grafana-provisioning/dashboards:/etc/grafana/provisioning/dashboards  # ← MOUNT THƯ MỤC
       - grafana_data:/var/lib/grafana
     environment:
       - GF_SECURITY_ADMIN_USER=admin
