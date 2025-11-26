@@ -42,11 +42,11 @@ services:
     ports:
       - "8088:8088"
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8088/actuator/health"]
+      test: ["CMD", "curl", "-f", "-m", "10", "http://localhost:8088/actuator/health"]
       interval: 10s
-      timeout: 5s
-      retries: 5
-      start_period: 30s
+      timeout: 15s
+      retries: 10
+      start_period: 90s
     networks:
       - app-network
 

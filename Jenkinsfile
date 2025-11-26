@@ -114,16 +114,16 @@ pipeline {
             docker compose pull
             docker compose up -d --force-recreate --remove-orphans
             echo "Waiting for services to be healthy..."
-            sleep 30
-            # Wait for backend to be ready
+            sleep 60
+            # Wait for backend to be ready (increased timeout and attempts)
             echo "Waiting for backend health check..."
-            for i in {1..30}; do
-              if docker compose exec -T backend curl -s http://localhost:8088/actuator/health > /dev/null 2>&1; then
+            for i in {1..60}; do
+              if docker compose exec -T backend curl -s -m 10 http://localhost:8088/actuator/health > /dev/null 2>&1; then
                 echo "✓ Backend is healthy"
                 break
               fi
-              echo "Attempt $i/30 - Backend not ready yet..."
-              sleep 2
+              echo "Attempt $i/60 - Backend not ready yet..."
+              sleep 3
             done
             echo "Verifying Prometheus configuration..."
             docker compose logs prometheus | tail -20
