@@ -33,6 +33,13 @@ public class JwtAuthFilter extends OncePerRequestFilter {
             HttpServletRequest request,
             HttpServletResponse response,
             FilterChain chain) throws ServletException, IOException {
+
+        // Bỏ qua filter cho các endpoint của actuator
+        if (request.getRequestURI().startsWith("/actuator")) {
+            chain.doFilter(request, response);
+            return;
+        }
+
         final String authHeader = request.getHeader("Authorization");
         String jwt = null;
         String username = null;
@@ -61,7 +68,7 @@ public class JwtAuthFilter extends OncePerRequestFilter {
                 System.out.println("[JWT Filter] Loaded user: " + username);
                 System.out.println(" [JWT Filter] User authorities: " + userDetails.getAuthorities());
 
-                //  Kiểm tra token hợp lệ
+                // Kiểm tra token hợp lệ
                 if (jwtService.validateToken(jwt, userDetails)) {
                     // Tạo authentication token
                     UsernamePasswordAuthenticationToken authToken = new UsernamePasswordAuthenticationToken(
