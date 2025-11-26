@@ -103,15 +103,18 @@ pipeline {
       }
     }
     stage('Deploy (Docker Compose)') {
+      when {
+        branch 'deploy'
+      }
       steps {
         script {
           echo "Deploying application with docker-compose..."
           sh '''
             docker compose down --remove-orphans || true
             docker compose pull
-            docker compose up -d --force-recreate
+            docker compose up -d --force-recreate --remove-orphans
             echo "Waiting for services to be healthy..."
-            sleep 10
+            sleep 15
             docker compose ps
           '''
         }
