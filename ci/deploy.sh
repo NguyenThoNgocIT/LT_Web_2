@@ -11,7 +11,13 @@ echo "Pulling latest images..."
 docker compose pull || true
 
 echo "Restarting stack..."
-docker compose up -d --remove-orphans
+docker compose down --remove-orphans || true
+docker compose up -d
+
+# Ensure Prometheus config is reloaded
+echo "Reloading Prometheus configuration..."
+docker compose restart prometheus
+sleep 5
 
 echo "Pruning old images (optional)..."
 docker image prune -f || true

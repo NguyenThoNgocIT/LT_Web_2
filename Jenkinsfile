@@ -114,7 +114,9 @@ pipeline {
             docker compose pull
             docker compose up -d --force-recreate --remove-orphans
             echo "Waiting for services to be healthy..."
-            sleep 15
+            sleep 20
+            echo "Verifying Prometheus configuration..."
+            docker compose logs prometheus | tail -20
             docker compose ps
           '''
         }
