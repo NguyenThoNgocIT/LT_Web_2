@@ -48,6 +48,9 @@ public class SecurityConfig {
                 System.out.println("✅ ACTUATOR FILTER CHAIN IS LOADED");
                 http
                                 .securityMatcher("/actuator/**")
+                                .csrf(csrf -> csrf.disable())
+                                .sessionManagement(session -> session
+                                                .sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                                 .authorizeHttpRequests(auth -> auth.anyRequest().permitAll());
                 return http.build();
         }
