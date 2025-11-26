@@ -25,7 +25,7 @@ services:
       context: ./LT_Web_2-main/LT_Web2
       dockerfile: Dockerfile
       args:
-        SKIP_TESTS: "true" # Skip tests during image build
+        SKIP_TESTS: "true"
     container_name: ltweb2-backend
     environment:
       SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/cafe_shop
@@ -34,18 +34,20 @@ services:
       SPRING_JPA_HIBERNATE_DDL_AUTO: update
       SPRING_PROFILES_ACTIVE: prod
       JWT_SECRET: CHANGE_ME_SECRET_BASE64
-      # Expose actuator for Prometheus
-      MANAGEMENT_ENDPOINTS_WEB_EXPOSURE_INCLUDE: "prometheus,health"
+      # ✅ Bật actuator endpoints (bắt buộc đủ 2 dòng)
+      MANAGEMENT_ENDPOINTS_WEB_EXPOSURE_INCLUDE: "health,prometheus"
+      MANAGEMENT_ENDPOINT_PROMETHEUS_ENABLED: "true"
     depends_on:
       postgres:
         condition: service_healthy
     ports:
       - "8088:8088"
     healthcheck:
-      test: ["CMD", "curl", "-f", "-m", "5", "http://localhost:8088/actuator/prometheus"]
+      # ✅ Dùng /actuator/health để kiểm tra khỏe mạnh (an toàn hơn)
+      test: ["CMD", "curl", "-f", "http://localhost:8088/actuator/health"]
       interval: 15s
       timeout: 10s
-      retries: 5
+      retries: 6
       start_period: 60s
     networks:
       - app-network
@@ -76,12 +78,12 @@ services:
       - '--web.console.libraries=/usr/share/prometheus/console_libraries'
       - '--web.console.templates=/usr/share/prometheus/consoles'
     ports:
-      - "9091:9090" # Changed host port to 9091 to avoid conflict
+      - "9091:9090"
     depends_on:
-      - backend
-      - cadvisor
-    environment:
-      - PROMETHEUS_RETRY_INTERVAL=5s
+      backend:
+        condition: service_healthy  # ✅ Đợi backend khỏe mới scrape
+      cadvisor:
+        condition: service_started
     networks:
       - app-network
 
@@ -104,12 +106,10 @@ services:
     container_name: grafana
     volumes:
       - ./ci/grafana-datasource.yml:/etc/grafana/provisioning/datasources/datasource.yml
-      - ./ci/grafana-dashboard.json:/etc/grafana/provisioning/dashboards/dashboard.json
       - grafana_data:/var/lib/grafana
     environment:
       - GF_SECURITY_ADMIN_USER=admin
       - GF_SECURITY_ADMIN_PASSWORD=admin123
-      - GF_PROVISIONING_PATH=/etc/grafana/provisioning
     ports:
       - "3001:3000"
     depends_on:
