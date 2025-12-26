@@ -5,22 +5,22 @@ import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.web.authentication.WebAuthenticationDetailsSource;
+import org.springframework.stereotype.Component;
 import org.springframework.web.filter.OncePerRequestFilter;
 
 import java.io.IOException;
 
+@Component  // THÊM @Component ĐỂ SPRING QUẢN LÝ (nếu chưa có)
 public class JwtAuthFilter extends OncePerRequestFilter {
 
     private final UserDetailsService userDetailsService;
     private final JwtService jwtService;
 
-    @Autowired
     public JwtAuthFilter(UserDetailsService userDetailsService, JwtService jwtService) {
         this.userDetailsService = userDetailsService;
         this.jwtService = jwtService;
@@ -32,34 +32,42 @@ public class JwtAuthFilter extends OncePerRequestFilter {
             HttpServletResponse response,
             FilterChain chain) throws ServletException, IOException {
 
-        // Skip JWT authentication for actuator endpoints
-        String requestPath = request.getRequestURI();
-        if (requestPath.startsWith("/actuator/")) {
+        String path = request.getRequestURI();
+
+        // BỎ QUA TOÀN BỘ CÁC ENDPOINT KHÔNG CẦN TOKEN (QUAN TRỌNG NHẤT)
+        if (path.startsWith("/api/auth/") ||        // login, register, refresh token
+            path.startsWith("/actuator/") || 
+            path.startsWith("/uploads/") ||
+            path.equals("/") ||
+            path.equals("/home") ||
+            path.equals("/welcome") ||
+            path.equals("/api/hello")) {
             chain.doFilter(request, response);
             return;
         }
 
         final String authHeader = request.getHeader("Authorization");
-        String jwt = null;
+
+        if (authHeader == null || !authHeader.startsWith("Bearer ")) {
+            chain.doFilter(request, response);
+            return;
+        }
+
+        String jwt = authHeader.substring(7);
         String username = null;
 
-        if (authHeader != null && authHeader.startsWith("Bearer ")) {
-            jwt = authHeader.substring(7);
-            try {
-                username = jwtService.extractUsername(jwt);
-            } catch (Exception e) {
-                // Error extracting username, proceed without authentication
-            }
+        try {
+            username = jwtService.extractUsername(jwt);
+        } catch (Exception e) {
+            // token lỗi → bỏ qua
         }
 
         if (username != null && SecurityContextHolder.getContext().getAuthentication() == null) {
-            UserDetails userDetails = this.userDetailsService.loadUserByUsername(username);
+            UserDetails userDetails = userDetailsService.loadUserByUsername(username);
 
             if (jwtService.validateToken(jwt, userDetails)) {
                 UsernamePasswordAuthenticationToken authToken = new UsernamePasswordAuthenticationToken(
-                        userDetails,
-                        null,
-                        userDetails.getAuthorities());
+                        userDetails, null, userDetails.getAuthorities());
                 authToken.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
                 SecurityContextHolder.getContext().setAuthentication(authToken);
             }

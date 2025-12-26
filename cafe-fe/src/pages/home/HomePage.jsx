@@ -133,19 +133,16 @@ export default function HomePage() {
           <h2 className="text-4xl font-bold text-white text-center mb-12">Đội ngũ của chúng tôi</h2>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
             <StaffCard 
-              name="Ngọc Anh"
+              name="Nguyenthongoc"
               role="Head Barista"
-              imageUrl="https://images.unsplash.com/photo-1517258471123-7d3669e05654?ixlib=rb-4.0.3"
             />
             <StaffCard 
-              name="Minh Tuấn"
+              name="nguyethongoc"
               role="Coffee Roaster"
-              imageUrl="https://images.unsplash.com/photo-1516224498413-5f1f893f059a?ixlib=rb-4.0.3"
             />
             <StaffCard 
-              name="Thu Hà"
+              name="nguyenthongoc"
               role="Service Manager"
-              imageUrl="https://images.unsplash.com/photo-1528297506728-9533d2ac3fa4?ixlib=rb-4.0.3"
             />
           </div>
         </div>

@@ -9,6 +9,7 @@ import jakarta.servlet.http.HttpServletResponse;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.http.HttpMethod;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.AuthenticationProvider;
 import org.springframework.security.authentication.dao.DaoAuthenticationProvider;
@@ -37,10 +38,11 @@ public class SecurityConfig {
         @Autowired
         private UserRepository userRepository;
 
-        @Bean
-        public JwtAuthFilter jwtAuthFilter(UserDetailsService userDetailsService, JwtService jwtService) {
-                return new JwtAuthFilter(userDetailsService, jwtService);
-        }
+        // @Bean
+        // public JwtAuthFilter jwtAuthFilter(UserDetailsService userDetailsService,
+        // JwtService jwtService) {
+        // return new JwtAuthFilter(userDetailsService, jwtService);
+        // }
 
         @Bean
         @Order(1)
@@ -92,11 +94,13 @@ public class SecurityConfig {
                                 .sessionManagement(session -> session
                                                 .sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                                 .authorizeHttpRequests(auth -> auth
+                                                .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
+                                                .requestMatchers("/welcome").permitAll()
                                                 .requestMatchers("/api/auth/**").permitAll()
                                                 .requestMatchers("/uploads/**").permitAll()
                                                 .requestMatchers("/api/user/**").hasAnyRole("USER", "ADMIN", "ROOT")
                                                 .requestMatchers("/api/admin/**").hasAnyRole("ADMIN", "ROOT")
-                                                .anyRequest().authenticated())
+                                                .anyRequest().permitAll())
                                 .exceptionHandling(ex -> ex
                                                 .authenticationEntryPoint((request, response, authException) -> {
                                                         System.out.println(
@@ -149,27 +153,30 @@ public class SecurityConfig {
 
         @Bean
         public CorsConfigurationSource corsConfigurationSource() {
-                CorsConfiguration config = new CorsConfiguration();
-                // Lấy danh sách origin từ application.properties
-                // (spring.web.cors.allowed-origins)
-                // Nếu không có, mặc định cho phép các origin dev thông dụng (3000, 3001, 5173 -
-                // Vite)
-                String allowed = this.allowedOrigins == null
-                                ? "http://localhost:3000,http://localhost:3001,http://localhost:5173"
-                                : this.allowedOrigins;
-                // Dùng allowedOriginPatterns để hỗ trợ wildcard/patterns (ví dụ
-                // http://localhost:*)
-                config.setAllowedOriginPatterns(Arrays.stream(allowed.split(","))
-                                .map(String::trim)
-                                .collect(Collectors.toList()));
-                config.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "OPTIONS"));
-                config.setAllowedHeaders(List.of("*"));
-                // Cho phép gửi cookie/authorization header nếu FE gửi credentials
-                config.setAllowCredentials(true);
+                CorsConfiguration configuration = new CorsConfiguration();
+
+                // Cho phép các domain cụ thể. Dùng addAllowedOrigin thay vì
+                // setAllowedOriginPatterns
+                configuration.addAllowedOrigin("https://d8fnn903p9y72.cloudfront.net");
+                configuration.addAllowedOrigin("https://org.ryon.website");
+                configuration.addAllowedOrigin("http://localhost:3000");
+                configuration.addAllowedOrigin("http://localhost:3001");
+
+                // Cho phép tất cả các method
+                configuration.setAllowedMethods(
+                                Arrays.asList("GET", "POST", "PUT", "DELETE", "OPTIONS", "HEAD", "PATCH"));
+
+                // Cho phép tất cả các header
+                configuration.setAllowedHeaders(Arrays.asList("*"));
+
+                // Cho phép gửi thông tin xác thực (credentials)
+                configuration.setAllowCredentials(true);
 
                 UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
-                // Áp dụng cho API path. Nếu muốn áp dụng toàn trang, đổi thành "/**".
-                source.registerCorsConfiguration("/api/**", config);
+                source.registerCorsConfiguration("/api/**", configuration); // Áp dụng cho /api/**
+
+                System.out.println("✅✅✅ NEW CORS CONFIG LOADED ✅✅✅"); // Thêm log để xác nhận
+
                 return source;
         }
 
