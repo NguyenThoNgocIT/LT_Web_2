@@ -14,9 +14,8 @@ import org.springframework.stereotype.Component;
 import org.springframework.web.filter.OncePerRequestFilter;
 
 import java.io.IOException;
-import java.util.List;
 
-@Component
+@Component  // THÊM @Component ĐỂ SPRING QUẢN LÝ (nếu chưa có)
 public class JwtAuthFilter extends OncePerRequestFilter {
 
     private final UserDetailsService userDetailsService;
@@ -27,43 +26,53 @@ public class JwtAuthFilter extends OncePerRequestFilter {
         this.jwtService = jwtService;
     }
 
-    // ✅ Thêm phương thức này để bỏ qua các URL không cần JWT
     @Override
-    protected boolean shouldNotFilter(HttpServletRequest request) {
-        List<String> skipPaths = List.of(
-                "/login",
-                "/logout",                     // ← quan trọng!
-                "/register",
-                "/process-register",
-                "/api/auth/login",
-                "/api/auth/register"
-        );
+    protected void doFilterInternal(
+            HttpServletRequest request,
+            HttpServletResponse response,
+            FilterChain chain) throws ServletException, IOException {
 
-        String path = request.getServletPath();
-        return skipPaths.stream().anyMatch(path::equals) || path.startsWith("/api/auth/");
-    }
+        String path = request.getRequestURI();
 
-    @Override
-    protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain chain)
-            throws ServletException, IOException {
-        String authHeader = request.getHeader("Authorization");
-        String token = null;
+        // BỎ QUA TOÀN BỘ CÁC ENDPOINT KHÔNG CẦN TOKEN (QUAN TRỌNG NHẤT)
+        if (path.startsWith("/api/auth/") ||        // login, register, refresh token
+            path.startsWith("/actuator/") || 
+            path.startsWith("/uploads/") ||
+            path.equals("/") ||
+            path.equals("/home") ||
+            path.equals("/welcome") ||
+            path.equals("/api/hello")) {
+            chain.doFilter(request, response);
+            return;
+        }
+
+        final String authHeader = request.getHeader("Authorization");
+
+        if (authHeader == null || !authHeader.startsWith("Bearer ")) {
+            chain.doFilter(request, response);
+            return;
+        }
+
+        String jwt = authHeader.substring(7);
         String username = null;
 
-        if (authHeader != null && authHeader.startsWith("Bearer ")) {
-            token = authHeader.substring(7);
-            username = jwtService.extractUsername(token);
+        try {
+            username = jwtService.extractUsername(jwt);
+        } catch (Exception e) {
+            // token lỗi → bỏ qua
         }
 
         if (username != null && SecurityContextHolder.getContext().getAuthentication() == null) {
             UserDetails userDetails = userDetailsService.loadUserByUsername(username);
-            if (jwtService.validateToken(token, userDetails)) {
+
+            if (jwtService.validateToken(jwt, userDetails)) {
                 UsernamePasswordAuthenticationToken authToken = new UsernamePasswordAuthenticationToken(
                         userDetails, null, userDetails.getAuthorities());
                 authToken.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
                 SecurityContextHolder.getContext().setAuthentication(authToken);
             }
         }
+
         chain.doFilter(request, response);
     }
 }

@@ -1,13 +1,15 @@
 package com.example.LT_Web2.config;
 
-import com.example.LT_Web2.models.UseModel;
+import com.example.LT_Web2.repository.UserRepository;
 import com.example.LT_Web2.services.JwtService;
+import org.springframework.beans.factory.annotation.Value;
+import java.util.Arrays;
+import java.util.stream.Collectors;
 import jakarta.servlet.http.HttpServletResponse;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.autoconfigure.cache.CacheManagerCustomizers;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.core.annotation.Order;
+import org.springframework.http.HttpMethod;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.AuthenticationProvider;
 import org.springframework.security.authentication.dao.DaoAuthenticationProvider;
@@ -21,214 +23,164 @@ import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
+import org.springframework.web.cors.CorsConfiguration;
+import org.springframework.web.cors.CorsConfigurationSource;
+import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 
-import com.example.LT_Web2.repository.UserRepository;
+import java.util.List;
+import org.springframework.core.annotation.Order;
 
-//@Configuration
-//@EnableWebSecurity
-//@EnableMethodSecurity(prePostEnabled = true)
-//public class SecurityConfig {
-//
-//    @Autowired
-//    private UserRepository userRepository;
-//
-//    @Bean
-//    public UserDetailsService userDetailsService() {
-//        return (email) -> {
-//            UseModel user = userRepository.findByEmail(email)
-//                    .orElseThrow(() -> new UsernameNotFoundException("User not found with email: " + email));
-//            return user; // UseModel đã triển khai UserDetails
-//        };
-//    }
-//
-//    @Bean
-//    public BCryptPasswordEncoder bCryptPasswordEncoder() {
-//        return new BCryptPasswordEncoder();
-//    }
-//
-//    @Bean
-//    public AuthenticationProvider authenticationProvider() {
-//        DaoAuthenticationProvider provider = new DaoAuthenticationProvider();
-//        provider.setUserDetailsService(userDetailsService());
-//        provider.setPasswordEncoder(bCryptPasswordEncoder());
-//        return provider;
-//    }
-//
-//    @Bean
-//    public AuthenticationManager authenticationManager() throws Exception {
-//        return authentication -> authenticationProvider().authenticate(authentication);
-//    }
-//
-//    @Bean
-//    public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
-//        http
-//                .csrf(csrf -> csrf.disable())
-//                .authorizeHttpRequests((auth) -> auth
-//                        .requestMatchers("/", "/login", "/register", "/process-register").permitAll()
-//                        .requestMatchers("/api/auth/**").permitAll()
-//                        .requestMatchers("/api/user/**").hasAnyRole("USER", "ADMIN")
-//                        .requestMatchers("/api/admin/**").hasRole("ADMIN")
-//                        .requestMatchers("/user/profile", "/user/profile/**", "/user/company/save").hasAnyRole("USER", "ADMIN")
-//                        .requestMatchers("/admin/**").hasRole("ADMIN")
-//                        .anyRequest().authenticated()
-//                )
-//                .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.ALWAYS)) // Thay bằng ALWAYS để test
-//                .formLogin(form -> form
-//                        .loginPage("/login")
-//                        .successHandler(new CustomAuthenticationSuccessHandler())
-//                        .failureUrl("/login?error")
-//                        .permitAll()
-//                )
-//                .logout(logout -> logout
-//                        .logoutSuccessUrl("/login?logout")
-//                        .permitAll()
-//                )
-//                .addFilterBefore(jwtAuthFilter(), UsernamePasswordAuthenticationFilter.class);
-//
-//        return http.build();
-//    }
-//
-//    @Bean
-//    public JwtAuthFilter jwtAuthFilter() {
-//        return new JwtAuthFilter(userDetailsService(), jwtService());
-//    }
-//
-//    @Bean
-//    public JwtService jwtService() {
-//        return new JwtService();
-//    }
-//}
 @Configuration
 @EnableWebSecurity
 @EnableMethodSecurity(prePostEnabled = true)
 public class SecurityConfig {
 
-    @Autowired
-    private UserRepository userRepository;
+        @Autowired
+        private UserRepository userRepository;
 
-    @Bean
-    public AuthenticationManager authenticationManager(
-        AuthenticationConfiguration authConfig) throws Exception {
-    return authConfig.getAuthenticationManager();
+        // @Bean
+        // public JwtAuthFilter jwtAuthFilter(UserDetailsService userDetailsService,
+        // JwtService jwtService) {
+        // return new JwtAuthFilter(userDetailsService, jwtService);
+        // }
+
+        @Bean
+        @Order(1)
+        public SecurityFilterChain actuatorSecurityFilterChain(HttpSecurity http) throws Exception {
+                System.out.println("✅ ACTUATOR FILTER CHAIN IS LOADED");
+                http
+                                .securityMatcher("/actuator/**")
+                                .csrf(csrf -> csrf.disable())
+                                .sessionManagement(session -> session
+                                                .sessionCreationPolicy(SessionCreationPolicy.STATELESS))
+                                .authorizeHttpRequests(auth -> auth.anyRequest().permitAll());
+                return http.build();
         }
 
+        @Bean
+        public AuthenticationManager authenticationManager(
+                        AuthenticationConfiguration authConfig) throws Exception {
+                return authConfig.getAuthenticationManager();
+        }
 
-    // --- UserDetailsService ---
-    @Bean
-    public UserDetailsService userDetailsService() {
-        return email -> userRepository.findByEmail(email)
-                .orElseThrow(() -> new UsernameNotFoundException("User not found: " + email));
-    }
+        @Bean
+        public UserDetailsService userDetailsService() {
+                return email -> userRepository.findByEmail(email)
+                                .orElseThrow(() -> new UsernameNotFoundException("User not found: " + email));
+        }
 
-    @Bean
-    public BCryptPasswordEncoder bCryptPasswordEncoder() {
-        return new BCryptPasswordEncoder();
-    }
+        @Bean
+        public BCryptPasswordEncoder passwordEncoder() {
+                return new BCryptPasswordEncoder();
+        }
 
-    @Bean
-    public AuthenticationProvider authenticationProvider() {
-        DaoAuthenticationProvider provider = new DaoAuthenticationProvider();
-        provider.setUserDetailsService(userDetailsService());
-        provider.setPasswordEncoder(bCryptPasswordEncoder());
-        return provider;
-    }
+        @Bean
+        public AuthenticationProvider authenticationProvider() {
+                DaoAuthenticationProvider provider = new DaoAuthenticationProvider();
+                provider.setUserDetailsService(userDetailsService());
+                provider.setPasswordEncoder(passwordEncoder());
+                return provider;
+        }
 
-    // ⚠️ Không cần AuthenticationManager bean nếu dùng đúng cách (Spring Boot 3+)
-    // Nhưng nếu bạn cần, hãy inject nó đúng cách (xem bên dưới)
+        @Bean
+        @Order(2)
+        public SecurityFilterChain securityFilterChain(HttpSecurity http, JwtAuthFilter jwtAuthFilter)
+                        throws Exception {
+                System.out.println("[SecurityConfig] Initializing API security filter chain (Order 2)...");
 
-    // ✅ CHUỖI BẢO MẬT CHO WEB (SESSION-BASED)
-    @Bean
-    @Order(1)
-    public SecurityFilterChain webSecurityFilterChain(HttpSecurity http) throws Exception {
-        http
-                .securityMatcher("/", "/login","logout", "/register", "/process-register", "/user/**", "/admin/**")
-                .csrf(csrf -> csrf.disable())
-                .authorizeHttpRequests(auth -> auth
-                        .requestMatchers("/", "/login", "/register", "/process-register").permitAll()
-                        .requestMatchers("/user/profile", "/user/company/save").hasAnyRole("USER", "ADMIN")
-                        .requestMatchers("/admin/**").hasRole("ADMIN")
-                        .anyRequest().authenticated()
-                )
-                .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.IF_REQUIRED))
-                .formLogin(form -> form
-                        .loginPage("/login")
-                        .successHandler(new CustomAuthenticationSuccessHandler())
-                        .permitAll()
-                )
-                .logout(logout -> logout
-                        .logoutUrl("/logout")
-                        .logoutSuccessUrl("/login?logout")
-                        .permitAll()
-                );
+                http
+                                .cors(cors -> cors.configurationSource(corsConfigurationSource()))
+                                .csrf(csrf -> csrf.disable())
+                                .sessionManagement(session -> session
+                                                .sessionCreationPolicy(SessionCreationPolicy.STATELESS))
+                                .authorizeHttpRequests(auth -> auth
+                                                .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
+                                                .requestMatchers("/welcome").permitAll()
+                                                .requestMatchers("/api/auth/**").permitAll()
+                                                .requestMatchers("/uploads/**").permitAll()
+                                                .requestMatchers("/api/user/**").hasAnyRole("USER", "ADMIN", "ROOT")
+                                                .requestMatchers("/api/admin/**").hasAnyRole("ADMIN", "ROOT")
+                                                .anyRequest().permitAll())
+                                .exceptionHandling(ex -> ex
+                                                .authenticationEntryPoint((request, response, authException) -> {
+                                                        System.out.println(
+                                                                        "[SecurityConfig] AuthenticationEntryPoint called for: "
+                                                                                        + request.getRequestURI());
+                                                        response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
+                                                        response.setContentType("application/json; charset=utf-8");
+                                                        response.setCharacterEncoding("utf-8");
+                                                        response.getWriter()
+                                                                        .write("""
+                                                                                        {
+                                                                                          "timestamp": "%s",
+                                                                                          "status": 401,
+                                                                                          "error": "Unauthorized",
+                                                                                          "message": "Token không hợp lệ hoặc chưa cung cấp token",
+                                                                                          "path": "%s"
+                                                                                        }
+                                                                                        """
+                                                                                        .formatted(
+                                                                                                        java.time.Instant
+                                                                                                                        .now(),
+                                                                                                        request.getRequestURI()));
+                                                })
+                                                .accessDeniedHandler((request, response, accessDeniedException) -> {
+                                                        System.out.println(
+                                                                        "[SecurityConfig] AccessDeniedHandler called for: "
+                                                                                        + request.getRequestURI());
+                                                        response.setStatus(HttpServletResponse.SC_FORBIDDEN);
+                                                        response.setContentType("application/json; charset=utf-8");
+                                                        response.setCharacterEncoding("utf-8");
+                                                        response.getWriter()
+                                                                        .write("""
+                                                                                        {
+                                                                                          "timestamp": "%s",
+                                                                                          "status": 403,
+                                                                                          "error": "Forbidden",
+                                                                                          "message": "Bạn không có quyền truy cập tài nguyên này",
+                                                                                          "path": "%s"
+                                                                                        }
+                                                                                        """
+                                                                                        .formatted(
+                                                                                                        java.time.Instant
+                                                                                                                        .now(),
+                                                                                                        request.getRequestURI()));
+                                                }))
+                                .addFilterBefore(jwtAuthFilter, UsernamePasswordAuthenticationFilter.class);
 
-        return http.build();
-    }
+                return http.build();
+        }
 
-    // ✅ CHUỖI BẢO MẬT CHO API (JWT - STATELESS)
-    @Bean
-    @Order(2)
-    public SecurityFilterChain apiSecurityFilterChain(HttpSecurity http,
-                                                      JwtAuthFilter jwtAuthFilter) throws Exception {
-        http
-                .securityMatcher("/api/**")
-                .csrf(csrf -> csrf.disable())
-                .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
-                .authorizeHttpRequests(auth -> auth
-                        .requestMatchers("/api/auth/**").permitAll()
-                        .requestMatchers("/api/user/**").hasAnyRole("USER", "ADMIN")
-                        .requestMatchers("/api/admin/**").hasRole("ADMIN")
-                        .anyRequest().authenticated()
-                )
-                .exceptionHandling( ex -> ex
-                        .authenticationEntryPoint((request, response, authException) ->{
-                            // phần xử lí chưa xác thực nó sẽ log ra 401
-                            response.setStatus(HttpServletResponse.SC_ACCEPTED);
-                            response.setContentType("application/json; charset=utf-8");
-                            response.setCharacterEncoding("utf-8");
-                            response.getWriter().write("""
-                                   {
-                      "timestamp": "%s",
-                      "status": 401,
-                      "error": "Unauthorized",
-                      "message": "Token không hợp lệ hoặc chưa cung cấp token",
-                      "path": "%s"
-                    }
-                    """.formatted(
-                                    java.time.Instant.now(),
-                                    request.getRequestURI()
-                            ));
-                        })
-                        .accessDeniedHandler((request, response, accessDeniedException) -> {
-                            response.setStatus(HttpServletResponse.SC_FORBIDDEN);
-                            response.setContentType("application/json; charset=utf-8");
-                            response.setCharacterEncoding("utf-8");
-                            response.getWriter().write("""
-                                    {
-                      "timestamp": "%s",
-                      "status": 403,
-                      "error": "Forbidden",
-                      "message": "Bạn không có quyền truy cập tài nguyên này",
-                      "path": "%s"
-                    }
-                    """.formatted(
-                                    java.time.Instant.now(),
-                                    request.getRequestURI()
-                            ));
-                                })
+        @Bean
+        public CorsConfigurationSource corsConfigurationSource() {
+                CorsConfiguration configuration = new CorsConfiguration();
 
-                )
-                .addFilterBefore(jwtAuthFilter, UsernamePasswordAuthenticationFilter.class);
+                // Cho phép các domain cụ thể. Dùng addAllowedOrigin thay vì
+                // setAllowedOriginPatterns
+                configuration.addAllowedOrigin("https://d8fnn903p9y72.cloudfront.net");
+                configuration.addAllowedOrigin("https://org.ryon.website");
+                configuration.addAllowedOrigin("http://localhost:3000");
+                configuration.addAllowedOrigin("http://localhost:3001");
 
-        return http.build();
-    }
+                // Cho phép tất cả các method
+                configuration.setAllowedMethods(
+                                Arrays.asList("GET", "POST", "PUT", "DELETE", "OPTIONS", "HEAD", "PATCH"));
 
-    @Bean
-    public JwtAuthFilter jwtAuthFilter() {
-        return new JwtAuthFilter(userDetailsService(), jwtService());
-    }
+                // Cho phép tất cả các header
+                configuration.setAllowedHeaders(Arrays.asList("*"));
 
-    @Bean
-    public JwtService jwtService() {
-        return new JwtService();
-    }
+                // Cho phép gửi thông tin xác thực (credentials)
+                configuration.setAllowCredentials(true);
+
+                UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
+                source.registerCorsConfiguration("/api/**", configuration); // Áp dụng cho /api/**
+
+                System.out.println("✅✅✅ NEW CORS CONFIG LOADED ✅✅✅"); // Thêm log để xác nhận
+
+                return source;
+        }
+
+        // Đọc property từ application.properties: spring.web.cors.allowed-origins
+        @Value("${spring.web.cors.allowed-origins:}")
+        private String allowedOrigins;
 }
